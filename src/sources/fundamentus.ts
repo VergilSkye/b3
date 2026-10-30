@@ -8,6 +8,16 @@ const BASE_URL = "https://www.fundamentus.com.br";
 const RESULTADO_URL = `${BASE_URL}/resultado.php`;
 const BUSCA_URL = `${BASE_URL}/buscaavancada.php`;
 
+// Setores financeiros que precisam de classificação precisa para o ranking separado.
+// IDs extraídos de buscaavancada.php <select name="setor">.
+const FINANCIAL_SECTORS = [
+  { id: 20, nome: "Intermediários Financeiros" },
+  { id: 31, nome: "Previdência e Seguros" },
+  { id: 37, nome: "Serviços Financeiros Diversos" },
+] as const;
+
+const DELAY_BETWEEN_REQUESTS_MS = 3000;
+
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
@@ -58,50 +68,38 @@ function buildColFixture(headers: string[]): typeof COL_REAL & { setor: number }
 }
 
 /**
- * Busca a lista de setores parseando o <select name="setor"> de buscaavancada.php.
- * Retorna apenas setores com id numérico válido.
+ * Coleta dados do Fundamentus em dois passos para evitar rate limiting:
+ * 1. Um POST sem filtro de setor → todos os ~400 tickers com dados financeiros.
+ * 2. Um POST por setor financeiro (3 setores) para classificação precisa.
+ *
+ * O site bloqueia após ~5 POSTs rápidos consecutivos; 3 s entre requisições é suficiente.
  */
-export async function fetchSetores(): Promise<Array<{ id: number; nome: string }>> {
-  const html = await retry(async () => {
-    const res = await fetch(BUSCA_URL, { headers: { "User-Agent": USER_AGENT } });
-    if (!res.ok) throw new Error(`buscaavancada HTTP ${res.status}`);
+export async function fetchFundamentus(): Promise<RawStock[]> {
+  // 1. Todos os tickers em um único POST
+  const bulkHtml = await retry(async () => {
+    const res = await fetch(RESULTADO_URL, {
+      method: "POST",
+      headers: {
+        "User-Agent": USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Referer: BUSCA_URL,
+      },
+      body: "negociada=ON&ordem=1&x=28&y=16",
+    });
+    if (!res.ok) throw new Error(`Fundamentus bulk HTTP ${res.status}`);
     const buf = await res.arrayBuffer();
     return new TextDecoder("latin1").decode(buf);
   });
 
-  const $ = cheerio.load(html);
-  const setores: Array<{ id: number; nome: string }> = [];
+  const allStocks = parseHtml(bulkHtml, 50, "Outros");
+  console.log(`  ${allStocks.length} tickers coletados (bulk)`);
 
-  $('select[name="setor"] option').each((_i, el) => {
-    const value = $(el).attr("value");
-    const nome = $(el).text().trim();
-    if (!value || value === "" || !nome) return;
-    const id = Number(value);
-    if (Number.isFinite(id) && id > 0) {
-      setores.push({ id, nome });
-    }
-  });
+  // 2. Classificar setores financeiros com POSTs separados
+  const tickerSetor = new Map<string, string>();
 
-  if (setores.length === 0) {
-    throw new Error("Fundamentus: nenhum setor encontrado em buscaavancada.php");
-  }
+  for (const { id, nome } of FINANCIAL_SECTORS) {
+    await new Promise<void>((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
 
-  return setores;
-}
-
-/**
- * Coleta dados do Fundamentus fazendo POST para resultado.php?setor=N
- * para cada setor. Retorna todos os tickers com o setor real.
- *
- * Usa POST por setor pois GET para resultado.php não retorna resultados.
- */
-export async function fetchFundamentus(): Promise<RawStock[]> {
-  const setores = await fetchSetores();
-  console.log(`  ${setores.length} setores encontrados`);
-
-  const todos = new Map<string, RawStock>(); // keyed por ticker para dedup
-
-  for (const { id, nome } of setores) {
     const html = await retry(async () => {
       const res = await fetch(RESULTADO_URL, {
         method: "POST",
@@ -118,20 +116,15 @@ export async function fetchFundamentus(): Promise<RawStock[]> {
     });
 
     const rows = parseHtml(html, 0, nome);
-    for (const row of rows) {
-      if (!todos.has(row.ticker)) todos.set(row.ticker, row);
-    }
-
-    // Pausa gentil para não sobrecarregar o servidor
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+    for (const row of rows) tickerSetor.set(row.ticker, nome);
+    console.log(`  Setor ${nome}: ${rows.length} tickers`);
   }
 
-  const result = Array.from(todos.values());
-  if (result.length < 50) {
-    throw new Error(`Fundamentus: apenas ${result.length} tickers — layout pode ter mudado`);
-  }
-
-  return result;
+  // 3. Sobrescrever setor nos tickers financeiros
+  return allStocks.map((s) => {
+    const setor = tickerSetor.get(s.ticker);
+    return setor ? { ...s, setor } : s;
+  });
 }
 
 /**
