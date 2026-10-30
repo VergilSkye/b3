@@ -257,27 +257,74 @@ Só `workflow_dispatch` com inputs (período, grid). `actions/cache` para `data/
 
 ---
 
-## 9. Checklist M1 (próximo a executar)
+## 9. Checklist M1 — concluído ✓
 
-> Objetivo: `pnpm rank` roda localmente e gera `data/rankings/AAAA-MM.csv` com top 20. Volatilidade é mockada (todos os valores = 0.3) até o M2.
+> `pnpm typecheck && pnpm test && pnpm lint` passam. 30 testes. Ranking local gera CSV com vol mockada (0.3).
 
-- [ ] `package.json` — `pnpm init`, deps: `tsx cheerio zod csv-parse csv-stringify simple-statistics yahoo-finance2`, devDeps: `vitest typescript @types/node biome`
-- [ ] `tsconfig.json` — strict, ESM, `"moduleResolution": "bundler"`, `"target": "ES2022"`
-- [ ] `biome.json` — lint + format padrão
-- [ ] `.gitignore` — `node_modules/`, `data/cache/`, `.env`
-- [ ] `.env.example` — `BRAPI_TOKEN=`, `TELEGRAM_TOKEN=`, `TELEGRAM_CHAT_ID=`
-- [ ] `src/types.ts` — interfaces `RawStock`, `Stock`, `Snapshot`, `Config`, `SelectResult` (`{ geral: Stock[], financeiros: Stock[] }`)
-- [ ] `src/config.ts` — `DEFAULT_CONFIG`: `{ liquidezMin: 1_000_000, nAcoes: 20, corteVol: 0.25, metricas: ['evEbit','pl'], nAcoesFin: 5, metricasFin: ['pvp','pl'] }`
-- [ ] `src/utils/parseBR.ts` — `parseBR(s): number | null`; testes unitários
-- [ ] `src/utils/rank.ts` — `rankBy(items, key): items com campo rank`; testes unitários
-- [ ] `src/utils/quantile.ts` — wrapper de `simple-statistics`; testes unitários
-- [ ] `src/utils/retry.ts` — `retry(fn, attempts, delayMs)`
-- [ ] `src/sources/fundamentus.ts` — fetch + cheerio + zod; salvar fixture HTML em `tests/fixtures/fundamentus.html`; campo `setor` obrigatório no schema
-- [ ] `tests/fundamentus.test.ts` — parsear fixture; verificar ≥ 100 tickers; ≥ 1 financeira detectada; ≥ 1 linha com EV/EBIT e P/L numéricos
-- [ ] `src/strategy.ts` — `selectPortfolio(snapshot, config): SelectResult`: separa financeiras por setor → aplica filtros + dedupe + rank em cada grupo → retorna `{ geral, financeiros }`
-- [ ] `tests/strategy.test.ts` — snapshot sintético com ações gerais e financeiras; verificar separação, filtros, dedupe e ordenação independente
-- [ ] `src/rank.ts` — pipeline: idempotência → Fundamentus → preços mockados (vol=0.3) → `selectPortfolio` → gravar CSV com coluna `grupo` (geral/financeiro)
-- [ ] Verificar: `pnpm typecheck && pnpm test && pnpm lint` passam; `pnpm rank` gera CSV
+- [x] `package.json`, `tsconfig.json`, `biome.json`, `.gitignore`, `.env.example`, `pnpm-workspace.yaml`
+- [x] `src/types.ts` — `RawStock`, `Stock`, `Config`, `SelectResult`
+- [x] `src/config.ts` — `DEFAULT_CONFIG` + `isFinanceira()`
+- [x] `src/utils/parseBR.ts` + testes
+- [x] `src/utils/rank.ts` (`rankBy`, `scoreByRanks` índice-based) + testes
+- [x] `src/utils/quantile.ts` + `src/utils/retry.ts`
+- [x] `src/sources/fundamentus.ts` — fetch + cheerio + zod; `minRows` configurável
+- [x] `tests/fixtures/fundamentus.html` — fixture offline
+- [x] `tests/fundamentus.test.ts` — 7 testes (parse, financeiras, dedupe, erro)
+- [x] `src/strategy.ts` — `selectPortfolio` pura + `enriquecerComVolMock`
+- [x] `tests/strategy.test.ts` — 11 testes (filtros, dedupe, separação de grupos)
+- [x] `src/rank.ts` — pipeline com idempotência, vol mockada, grava CSV com coluna `grupo`
+
+---
+
+## 9b. Checklist M2 — volatilidade real (próxima sessão)
+
+> Objetivo: substituir vol mockada por volatilidade calculada com preços reais; adicionar diff (entradas/saídas vs mês anterior).
+
+- [ ] `src/sources/prices.ts` — `fetchVolatilidade(ticker, meses=12): Promise<number | null>`
+  - `yahoo-finance2`: `chart(ticker + '.SA', { period1, interval: '1d' })`
+  - calcular log-retornos diários → desvio-padrão × √252
+  - fallback brapi: `GET /quote/{ticker}?token=` + campo `historicalDataPrice`
+  - concorrência limitada: processar em lotes de 5 com `Promise.all`
+  - `retry` com 3 tentativas + backoff
+- [ ] `src/sources/prices.ts` — testes: mock de resposta yahoo; verificar cálculo com série conhecida
+- [ ] `src/strategy.ts` — remover `enriquecerComVolMock`; criar `enriquecerComVol(acoes, fetchVol)` assíncrono
+- [ ] `src/rank.ts` — usar `enriquecerComVol` em vez de mock; logar tickers sem preço (vol = null → excluir)
+- [ ] `src/diff.ts` — `calcDiff(anterior: string[], atual: string[]): { entradas, saidas }`
+  - ler último CSV de `data/rankings/` por data
+  - comparar tickers do grupo `geral` e `financeiro` separadamente
+- [ ] `src/rank.ts` — incluir diff no log e gravar campo `novo`/`saiu` no CSV
+- [ ] Testes de integração leves (mock fetch): pipeline completo gera CSV com vol real e diff correto
+- [ ] Verificar: `pnpm typecheck && pnpm test && pnpm lint` passam; `pnpm rank` gera CSV com vol real
+
+---
+
+## 9c. Checklist M3 — GitHub Actions + Telegram (foco atual)
+
+> Objetivo: clicar "Run workflow" no GitHub → pipeline roda → mensagem chega no Telegram com top 20 geral + top 5 financeiras.
+> Vol ainda mockada (0.3). M2 vem depois.
+
+### src/notify.ts
+- [ ] `buildMensagem(result: SelectResult, mes: string, diff: {entradas, saidas}, pageUrl: string): string`
+  - cabeçalho: `Ranking B3 — MMM/AAAA`
+  - seção Geral: top 20 com posição, ticker, score
+  - seção Financeiras: top 5 com posição, ticker, score
+  - seção Mudanças: entradas ↑ e saídas ↓ (se houver)
+  - rodapé: link da página (Pages — colocar URL quando disponível)
+- [ ] `sendTelegram(token, chatId, text)` — POST `https://api.telegram.org/bot{token}/sendMessage`; `parse_mode: HTML`
+- [ ] `pnpm notify` lê o CSV mais recente de `data/rankings/`, monta e envia
+
+### .github/workflows/ranking.yml
+- [ ] Criar `.github/workflows/ranking.yml` conforme esboço da seção 6
+- [ ] Verificar permissões: `contents: write`, `pages: write`, `id-token: write`
+- [ ] Secrets necessários: `BRAPI_TOKEN`, `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID`
+  - documentar em README ou CLAUDE.md como configurar no repo
+- [ ] Step de commit deve usar `|| exit 0` para não falhar quando não há mudanças
+
+### Validação
+- [ ] Fazer push para o GitHub
+- [ ] Configurar os 3 secrets no repo (Settings → Secrets → Actions)
+- [ ] Disparar manualmente via "Run workflow"
+- [ ] Confirmar: CSV commitado em `data/rankings/`, mensagem recebida no Telegram
 
 ---
 
