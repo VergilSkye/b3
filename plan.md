@@ -1,7 +1,19 @@
 # PLAN.md — quant-b3: ranking quantitativo de ações da B3
 
 > Documento de handoff. Leia inteiro antes de começar. Responda sempre em **português do Brasil**, de forma concisa e técnica.
-> **Antes de escrever código, confirme comigo as "Decisões em aberto" (seção 9).** Depois, comece pelo **M1**.
+> Trabalhe **um marco por vez**. Ao fim de cada um, rode `pnpm typecheck && pnpm test && pnpm lint` e mostre um resumo curto.
+
+---
+
+## 0. Decisões tomadas
+
+| # | Decisão | Escolha | Motivo |
+|---|---|---|---|
+| 1 | Repo | **público** | Pages gratuito; sem dados sensíveis no repositório |
+| 2 | Notificação | **Telegram** | já planejado; mais conveniente que e-mail |
+| 3 | Bancos/seguradoras | **ranking separado** | EV/EBIT não se aplica a financeiras → métricas próprias: P/VP + P/L (+ ROE opcional); mesmo filtro de liquidez e volatilidade |
+| 4 | Ordem de execução | **M1–M4 primeiro**, depois M5–M8 | ter produção funcionando valida a estratégia antes de investir no backtest |
+| 5 | Parâmetros iniciais | geral: **20 ações**, **EV/EBIT + P/L**; financeiras: **5 ações**, **P/VP + P/L**; rebalanceamento **mensal** | ponto de partida conservador; ajustar com base no backtest (M8) |
 
 ---
 
@@ -11,17 +23,21 @@ Sou dev e invisto na B3. Quero automatizar uma estratégia quantitativa de valor
 
 Stack: **Node.js 22 + TypeScript** (nada de Python).
 
+---
+
 ## 2. A estratégia (4 passos)
 
 1. **Universo barato e líquido**: todas as ações da B3, filtradas por liquidez média diária (2 meses) ≥ R$ 1.000.000.
 2. **Tirar prejuízo**: lucro líquido 12m > 0 (P/L > 0) e patrimônio líquido > 0.
 3. **Tirar as mais voláteis**: calcular a volatilidade anualizada de 12 meses (desvio-padrão dos log-retornos diários × √252) e descartar o quartil superior (`corteVol = 0.25`, configurável).
-4. **Ranquear por índice de valor e comprar as 20–30 primeiras**: score = soma dos ranks das métricas de valor (padrão: EV/EBIT + P/L; P/VP opcional); menor score = melhor. Peso igual.
+4. **Ranquear por índice de valor e comprar as 20 primeiras**: score = soma dos ranks de EV/EBIT e P/L; menor score = melhor. Peso igual.
 
 Regras adicionais:
 - **Deduplicar classes** da mesma empresa (TAEE3/TAEE4/TAEE11 → mesma raiz de 4 letras): manter a mais líquida.
-- **Bancos/seguradoras não têm EV/EBIT** no Fundamentus → tratamento conforme decisão da seção 9.
+- **Bancos/seguradoras**: **ranking separado** com métricas próprias (P/VP + P/L) — detalhes abaixo.
 - **Rebalanceamento**: mensal por padrão (configurável).
+
+---
 
 ## 3. Arquitetura
 
@@ -35,7 +51,23 @@ B3 COTAHIST ──┴──▶│ backtest.ts → métricas + gráficos → rela
                   └────────────────────────────────────────────────────────┘
 ```
 
-**Princípio central:** `strategy.ts` exporta uma **função pura** `selectPortfolio(snapshot, config)` que recebe os dados de *uma data* e devolve o top N. Ela não sabe de onde vieram os dados → a mesma função é usada ao vivo e no backtest.
+**Princípio central:** `strategy.ts` exporta uma **função pura** `selectPortfolio(snapshot, config)` que recebe os dados de *uma data* e devolve `{ geral: Stock[], financeiros: Stock[] }`. Ela não sabe de onde vieram os dados → a mesma função é usada ao vivo e no backtest.
+
+### Tratamento de bancos e seguradoras
+
+EV/EBIT não se aplica a financeiras (dívida é matéria-prima, não financiamento). A solução é um **ranking paralelo** com métricas adequadas:
+
+| | Universo geral | Financeiras (bancos/seguros) |
+|---|---|---|
+| Detecção | setor Fundamentus não contém "Banco", "Seguro", "Financ" | setor contém qualquer um desses termos |
+| Métricas de valor | EV/EBIT + P/L | **P/VP + P/L** |
+| Filtros | liquidez, P/L > 0, PL > 0, vol | liquidez, P/L > 0, PL > 0, vol |
+| Top N | `nAcoes = 20` | `nAcoesFin = 5` |
+| ROE (opcional) | — | pode entrar como 3ª métrica de qualidade |
+
+`selectPortfolio` separa os dois grupos antes de aplicar os filtros, processa cada um com sua `Config` própria, e retorna ambos. Site e Telegram exibem as duas listas.
+
+---
 
 ## 4. Stack Node/TypeScript
 
@@ -55,10 +87,12 @@ B3 COTAHIST ──┴──▶│ backtest.ts → métricas + gráficos → rela
 | Armazenamento backtest | `@duckdb/node-api` (opcional) | consultar CSVs grandes da CVM com SQL; se complicar, JSON/arrays em memória |
 | Relatório HTML | template string + **Chart.js via CDN** | HTML estático em `docs/` |
 | Testes | `vitest` | |
-| Lint/format | `eslint` + `prettier` (ou `biome`) | |
+| Lint/format | `biome` | substitui eslint + prettier; mais rápido |
 | Notificação | Telegram Bot API via `fetch` | `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID` |
 
 Sem framework de dataframe: arrays tipados + helpers pequenos (`groupBy`, `rankBy`, `quantile`).
+
+---
 
 ## 5. Estrutura do repositório
 
@@ -92,11 +126,16 @@ quant-b3/
 │   └── cache/               # gitignored (CVM, COTAHIST)
 ├── docs/                    # saída do GitHub Pages
 ├── tests/
+│   └── fixtures/            # HTML salvo do Fundamentus para testes offline
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+├── biome.json
+└── CLAUDE.md                # convenções para IA assistente
 ```
 
 Scripts no `package.json`: `rank`, `backtest`, `notify`, `test`, `lint`, `typecheck`.
+
+---
 
 ## 6. Fase 2 — ranking em produção
 
@@ -106,8 +145,8 @@ Scripts no `package.json`: `rank`, `backtest`, `notify`, `test`, `lint`, `typech
 |---|---|
 | 0. Idempotência | se `data/rankings/AAAA-MM.csv` já existe, sair com código 0 (o cron pode disparar mais de uma vez) |
 | 1. Coleta | `https://www.fundamentus.com.br/resultado.php` → cheerio → zod |
-| 2. Pré-filtro | liquidez, P/L > 0, PL > 0 **antes** de buscar preços (~990 → ~150 tickers) |
-| 3. Volatilidade | 12 meses de preços diários para os pré-filtrados, com concorrência limitada (ex.: 5) e retry |
+| 2. Pré-filtro | liquidez ≥ 1M, P/L > 0, PL > 0, excluir bancos **antes** de buscar preços (~990 → ~120 tickers) |
+| 3. Volatilidade | 12 meses de preços diários, concorrência limitada (5 simultâneos) + retry |
 | 4. Estratégia | `selectPortfolio()` |
 | 5. Diff | comparar com o último CSV → entradas/saídas |
 | 6. Persistir | gravar CSV + `docs/index.html` |
@@ -154,8 +193,10 @@ jobs:
 |---|---|
 | Fundamentus/Yahoo bloqueiam IPs do GitHub | User-Agent, retry com backoff, fallback brapi; se tudo falhar, job falha (GitHub avisa por e-mail) |
 | Layout do Fundamentus muda | validação zod; teste com fixture HTML salva em `tests/fixtures/` |
-| Pages em repo privado exige plano pago | decidir público/privado (seção 9) |
+| Pages em repo privado exige plano pago | repo público (decisão 1) |
 | Cron desativa após 60 dias sem commits | o commit mensal do bot mantém ativo |
+
+---
 
 ## 7. Fase 3 — backtest
 
@@ -199,28 +240,46 @@ CAGR vs Ibovespa/SMLL, volatilidade, **Sharpe vs CDI**, **max drawdown** e tempo
 ### `backtest.yml`
 Só `workflow_dispatch` com inputs (período, grid). `actions/cache` para `data/cache/` (CVM/COTAHIST). Publica relatório em `docs/backtest/`.
 
+---
+
 ## 8. Marcos
 
 | # | Entrega | Pronto quando |
 |---|---|---|
-| **M1** | Setup do repo (pnpm, TS, vitest, lint) + `parseBR` + coletor Fundamentus + `strategy.ts` com testes | `pnpm rank` gera ranking local (vol ainda mockada) |
+| **M1** | Setup + `parseBR` + coletor Fundamentus + `strategy.ts` com testes | `pnpm rank` gera ranking local (vol ainda mockada) |
 | **M2** | Volatilidade (yahoo-finance2 + fallback) + dedupe + diff | CSV com top N e entradas/saídas |
-| **M3** | `ranking.yml` + commit + Telegram | mensagem chega ao clicar "Run workflow" |
+| **M3** | `ranking.yml` + commit automático + Telegram | mensagem chega ao clicar "Run workflow" |
 | **M4** | GitHub Pages | página com top N e histórico |
 | **M5** | Ingestão CVM + COTAHIST com cache | snapshot de qualquer data passada |
 | **M6** | Motor de backtest + métricas | curva de 1 config vs Ibovespa |
 | **M7** | Grid + relatório in/out-of-sample | página de backtest publicada |
 | **M8** | Ajustar `config.ts` com base no backtest | ranking mensal usa parâmetros validados |
 
-Trabalhe um marco por vez; ao fim de cada um, rode `pnpm typecheck && pnpm test && pnpm lint` e me mostre um resumo curto.
+---
 
-## 9. Decisões em aberto (perguntar antes de começar)
+## 9. Checklist M1 (próximo a executar)
 
-1. Repositório **público ou privado**? (define uso do Pages grátis)
-2. Notificação: **Telegram**, e-mail ou só página?
-3. **Bancos**: ranking próprio (P/L + P/VP) ou excluir?
-4. Ordem: **M1–M4 primeiro** ou **backtest primeiro**?
-5. Parâmetros iniciais: nº de ações (20/25/30), métricas de valor, frequência.
+> Objetivo: `pnpm rank` roda localmente e gera `data/rankings/AAAA-MM.csv` com top 20. Volatilidade é mockada (todos os valores = 0.3) até o M2.
+
+- [ ] `package.json` — `pnpm init`, deps: `tsx cheerio zod csv-parse csv-stringify simple-statistics yahoo-finance2`, devDeps: `vitest typescript @types/node biome`
+- [ ] `tsconfig.json` — strict, ESM, `"moduleResolution": "bundler"`, `"target": "ES2022"`
+- [ ] `biome.json` — lint + format padrão
+- [ ] `.gitignore` — `node_modules/`, `data/cache/`, `.env`
+- [ ] `.env.example` — `BRAPI_TOKEN=`, `TELEGRAM_TOKEN=`, `TELEGRAM_CHAT_ID=`
+- [ ] `src/types.ts` — interfaces `RawStock`, `Stock`, `Snapshot`, `Config`, `SelectResult` (`{ geral: Stock[], financeiros: Stock[] }`)
+- [ ] `src/config.ts` — `DEFAULT_CONFIG`: `{ liquidezMin: 1_000_000, nAcoes: 20, corteVol: 0.25, metricas: ['evEbit','pl'], nAcoesFin: 5, metricasFin: ['pvp','pl'] }`
+- [ ] `src/utils/parseBR.ts` — `parseBR(s): number | null`; testes unitários
+- [ ] `src/utils/rank.ts` — `rankBy(items, key): items com campo rank`; testes unitários
+- [ ] `src/utils/quantile.ts` — wrapper de `simple-statistics`; testes unitários
+- [ ] `src/utils/retry.ts` — `retry(fn, attempts, delayMs)`
+- [ ] `src/sources/fundamentus.ts` — fetch + cheerio + zod; salvar fixture HTML em `tests/fixtures/fundamentus.html`; campo `setor` obrigatório no schema
+- [ ] `tests/fundamentus.test.ts` — parsear fixture; verificar ≥ 100 tickers; ≥ 1 financeira detectada; ≥ 1 linha com EV/EBIT e P/L numéricos
+- [ ] `src/strategy.ts` — `selectPortfolio(snapshot, config): SelectResult`: separa financeiras por setor → aplica filtros + dedupe + rank em cada grupo → retorna `{ geral, financeiros }`
+- [ ] `tests/strategy.test.ts` — snapshot sintético com ações gerais e financeiras; verificar separação, filtros, dedupe e ordenação independente
+- [ ] `src/rank.ts` — pipeline: idempotência → Fundamentus → preços mockados (vol=0.3) → `selectPortfolio` → gravar CSV com coluna `grupo` (geral/financeiro)
+- [ ] Verificar: `pnpm typecheck && pnpm test && pnpm lint` passam; `pnpm rank` gera CSV
+
+---
 
 ## 10. Convenções
 
