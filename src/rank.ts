@@ -44,13 +44,25 @@ async function main() {
   console.log(`  ${rawAcoes.length} tickers coletados`);
 
   // 2. Calcular volatilidade real via COTAHIST
-  console.log("Calculando volatilidade via COTAHIST...");
-  const tickers = rawAcoes.map((a) => a.ticker);
-  const volMap = await buildVolMap(tickers, CACHE_DIR);
+  // Pré-filtrar candidatos: Fundamentus inclui BDRs e FIIs que não existem no
+  // COTAHIST (CODBDI=02 = ações à vista). Calcular vol só para candidatos reais
+  // evita falso "baixa cobertura" causado por BDRs/FIIs na lista completa.
+  const candidatos = rawAcoes.filter(
+    (a) =>
+      (a.liquidezMedia ?? 0) >= DEFAULT_CONFIG.liquidezMin &&
+      a.pl !== null &&
+      a.pl > 0 &&
+      a.patLiq !== null &&
+      a.patLiq > 0,
+  );
+  const tickersCandidatos = candidatos.map((a) => a.ticker);
 
-  // Verificar cobertura mínima
-  const comVol = tickers.filter((t) => volMap.get(t) !== null).length;
-  const cobertura = tickers.length > 0 ? comVol / tickers.length : 0;
+  console.log(`Calculando volatilidade via COTAHIST (${tickersCandidatos.length} candidatos)...`);
+  const volMap = await buildVolMap(tickersCandidatos, CACHE_DIR);
+
+  // Verificar cobertura sobre candidatos (não sobre todos os tickers brutos)
+  const comVol = tickersCandidatos.filter((t) => (volMap.get(t) ?? null) !== null).length;
+  const cobertura = tickersCandidatos.length > 0 ? comVol / tickersCandidatos.length : 0;
   if (cobertura < VOL_COVERAGE_MIN) {
     throw new Error(
       `Cobertura de volatilidade insuficiente: ${(cobertura * 100).toFixed(1)}% (mínimo ${VOL_COVERAGE_MIN * 100}%)`,
