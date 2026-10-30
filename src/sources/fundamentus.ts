@@ -39,41 +39,9 @@ const COL_REAL = {
   patLiq: 19,
 };
 
-// Prefixos de tickers financeiros brasileiros conhecidos
-const PREFIXOS_FINANCEIROS = new Set([
-  // Bancos comerciais e múltiplos
-  "BBAS",
-  "ITUB",
-  "BBDC",
-  "SANB",
-  "BPAC",
-  "BRSR",
-  "BMGB",
-  "PINE",
-  "BGIP",
-  "BPAN",
-  "BAZA",
-  "BRIV",
-  "CRIV",
-  "IDVL",
-  "MODL",
-  "PRBC",
-  "ABCB", // Banco ABC Brasil
-  "BRBI", // BR Partners (banco de investimento)
-  "BMIN", // Banco Mercantil do Brasil
-  "BSLI", // Banco do Estado do Sergipe
-  // Seguros e previdência
-  "BBSE",
-  "CXSE",
-  "IRBR",
-  "PSSA",
-  // Holdings financeiras
-  "ITSA",
-  "BRGE",
-]);
-
-function setorPorTicker(ticker: string): string {
-  return PREFIXOS_FINANCEIROS.has(ticker.slice(0, 4).toUpperCase()) ? "Bancos" : "Outros";
+// Fallback quando setorMap não está disponível (testes offline / fixture sem setor)
+function setorFallback(_ticker: string): string {
+  return "Outros";
 }
 
 // Para a fixture de testes (que tem coluna Segmento), mapear por cabeçalho
@@ -92,7 +60,7 @@ function buildColFixture(headers: string[]): typeof COL_REAL & { setor: number }
   };
 }
 
-export async function fetchFundamentus(): Promise<RawStock[]> {
+export async function fetchFundamentus(setorMap?: Map<string, string>): Promise<RawStock[]> {
   const html = await retry(async () => {
     const res = await fetch(FUNDAMENTUS_URL, {
       headers: { "User-Agent": USER_AGENT },
@@ -103,10 +71,10 @@ export async function fetchFundamentus(): Promise<RawStock[]> {
     return new TextDecoder("latin1").decode(buf);
   });
 
-  return parseHtml(html);
+  return parseHtml(html, 50, setorMap);
 }
 
-export function parseHtml(html: string, minRows = 50): RawStock[] {
+export function parseHtml(html: string, minRows = 50, setorMap?: Map<string, string>): RawStock[] {
   const $ = cheerio.load(html);
   const rows: RawStock[] = [];
 
@@ -129,7 +97,10 @@ export function parseHtml(html: string, minRows = 50): RawStock[] {
     const ticker = (tickerCell.find("a").text().trim() || tickerCell.text().trim()).toUpperCase();
 
     const c = colFixture ?? COL_REAL;
-    const setor = colFixture !== null ? text(colFixture.setor) : setorPorTicker(ticker);
+    const setor =
+      colFixture !== null
+        ? text(colFixture.setor)
+        : (setorMap?.get(ticker) ?? setorFallback(ticker));
 
     const raw = {
       ticker,

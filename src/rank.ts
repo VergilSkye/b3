@@ -6,6 +6,7 @@ import { calcDiffResult } from "./diff.js";
 import { gravarHtml } from "./report/ranking-html.js";
 import { fetchFundamentus } from "./sources/fundamentus.js";
 import { buildVolMap } from "./sources/prices.js";
+import { buildSetorMap } from "./sources/setores.js";
 import { enriquecerComVol, selectPortfolio } from "./strategy.js";
 
 const CACHE_DIR = "data/cache";
@@ -39,8 +40,11 @@ async function main() {
   console.log(`Gerando ranking ${mes}...`);
 
   // 1. Coleta
+  console.log("Buscando setores do Fundamentus...");
+  const setorMap = await buildSetorMap(CACHE_DIR);
+
   console.log("Coletando dados do Fundamentus...");
-  const rawAcoes = await fetchFundamentus();
+  const rawAcoes = await fetchFundamentus(setorMap);
   console.log(`  ${rawAcoes.length} tickers coletados`);
 
   // 2. Calcular volatilidade real via COTAHIST
