@@ -41,6 +41,7 @@ const COL_REAL = {
 
 // Prefixos de tickers financeiros brasileiros conhecidos
 const PREFIXOS_FINANCEIROS = new Set([
+  // Bancos comerciais e múltiplos
   "BBAS",
   "ITUB",
   "BBDC",
@@ -57,10 +58,16 @@ const PREFIXOS_FINANCEIROS = new Set([
   "IDVL",
   "MODL",
   "PRBC",
+  "ABCB", // Banco ABC Brasil
+  "BRBI", // BR Partners (banco de investimento)
+  "BMIN", // Banco Mercantil do Brasil
+  "BSLI", // Banco do Estado do Sergipe
+  // Seguros e previdência
   "BBSE",
   "CXSE",
   "IRBR",
   "PSSA",
+  // Holdings financeiras
   "ITSA",
   "BRGE",
 ]);

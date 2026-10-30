@@ -34,15 +34,36 @@ function carregarHistorico(dataDir: string, grupoFiltro: string): HistoricoEntry
     });
 }
 
+const DISPLAY: Record<string, string> = {
+  evEbit: "EV/EBIT",
+  pl: "P/L",
+  pvp: "P/VP",
+  roe: "ROE",
+  volatilidade: "Vol12m",
+  liquidezMedia: "Liq2m (R$)",
+};
+
+function fmt(campo: string, valor: string | undefined): string {
+  if (valor == null || valor === "") return "-";
+  if (campo === "liquidezMedia") {
+    const n = Number(valor);
+    if (!Number.isFinite(n)) return valor;
+    return n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(0)}M` : valor;
+  }
+  if (campo === "volatilidade") return `${(Number(valor) * 100).toFixed(1)}%`;
+  return valor;
+}
+
 function tabelaAcoes(rows: CsvRow[], metricas: string[]): string {
-  const cabecalho = ["#", "Ticker", "Setor", ...metricas, "Score"]
+  const cols = [...metricas, "volatilidade", "liquidezMedia"];
+  const cabecalho = ["#", "Ticker", "Setor", ...cols.map((m) => DISPLAY[m] ?? m), "Score"]
     .map((h) => `<th>${h}</th>`)
     .join("");
 
   const linhas = rows
     .map((r, i) => {
-      const metricaCells = metricas.map((m) => `<td>${r[m] ?? "-"}</td>`).join("");
-      return `<tr><td>${i + 1}</td><td><b>${r.ticker}</b></td><td>${r.setor}</td>${metricaCells}<td>${r.score}</td></tr>`;
+      const cells = cols.map((m) => `<td>${fmt(m, r[m])}</td>`).join("");
+      return `<tr><td>${i + 1}</td><td><b>${r.ticker}</b></td><td>${r.setor}</td>${cells}<td>${r.score}</td></tr>`;
     })
     .join("\n");
 
@@ -71,11 +92,12 @@ export function gerarHtml(csvPath: string, mes: string, dataDir: string): string
   const financeiras = rows.filter((r) => r.grupo === "financeiro");
   const historicoGeral = carregarHistorico(dataDir, "geral");
 
-  const [ano, mesNum] = mes.split("-");
-  const mesLabel = new Date(`${ano}-${mesNum}-01`).toLocaleString("pt-BR", {
+  // Usar construtor local (year, month, day) evita o bug de UTC:
+  // new Date("2026-10-01") = meia-noite UTC = 30/09 em UTC-3 → "setembro"
+  const [anoStr, mesStr] = mes.split("-");
+  const mesLabel = new Date(Number(anoStr), Number(mesStr) - 1, 1).toLocaleString("pt-BR", {
     month: "long",
     year: "numeric",
-    timeZone: "America/Sao_Paulo",
   });
 
   return `<!DOCTYPE html>

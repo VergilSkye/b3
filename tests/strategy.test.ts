@@ -110,6 +110,42 @@ describe("selectPortfolio", () => {
     expect(r.geral.find((a) => a.ticker === "ZZZZ3")).toBeUndefined();
   });
 
+  it("filtra ação com evEbit negativo (EBIT negativo = prejuízo operacional)", () => {
+    const c = enriquecerComVolMock([
+      ...rawGerais,
+      makeStock({ ticker: "NEGV3", evEbit: -5, pl: 3 }),
+    ]);
+    const r = selectPortfolio(c, { ...cfg, nAcoes: 10 });
+    expect(r.geral.find((a) => a.ticker === "NEGV3")).toBeUndefined();
+  });
+
+  it("filtra ação com evEbit zero (dado ausente no Fundamentus)", () => {
+    const c = enriquecerComVolMock([
+      ...rawGerais,
+      makeStock({ ticker: "ZERO3", evEbit: 0, pl: 3 }),
+    ]);
+    const r = selectPortfolio(c, { ...cfg, nAcoes: 10 });
+    expect(r.geral.find((a) => a.ticker === "ZERO3")).toBeUndefined();
+  });
+
+  it("filtra ação com evEbit nulo", () => {
+    const c = enriquecerComVolMock([
+      ...rawGerais,
+      makeStock({ ticker: "NULE3", evEbit: null, pl: 3 }),
+    ]);
+    const r = selectPortfolio(c, { ...cfg, nAcoes: 10 });
+    expect(r.geral.find((a) => a.ticker === "NULE3")).toBeUndefined();
+  });
+
+  it("financeiras não exigem evEbit > 0", () => {
+    const c = enriquecerComVolMock([
+      ...rawFinanceiras,
+      makeStock({ ticker: "BNCO5", setor: "Bancos", evEbit: null, pvp: 1.0, pl: 6 }),
+    ]);
+    const r = selectPortfolio(c, { ...cfg, nAcoesFin: 10 });
+    expect(r.financeiros.find((a) => a.ticker === "BNCO5")).toBeDefined();
+  });
+
   it("deduplica classes: mantém mais líquida (TAEE3 > TAEE4 > TAEE11)", () => {
     const comDupe = enriquecerComVolMock([
       makeStock({ ticker: "TAEE3", liquidezMedia: 9_000_000, evEbit: 8, pl: 9 }),

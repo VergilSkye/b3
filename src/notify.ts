@@ -43,11 +43,10 @@ export function buildMensagem(
   const gerais = rows.filter((r) => r.grupo === "geral");
   const financeiras = rows.filter((r) => r.grupo === "financeiro");
 
-  const [ano, mesNum] = mes.split("-");
-  const mesLabel = new Date(`${ano}-${mesNum}-01`).toLocaleString("pt-BR", {
+  const [anoStr, mesStr] = mes.split("-");
+  const mesLabel = new Date(Number(anoStr), Number(mesStr) - 1, 1).toLocaleString("pt-BR", {
     month: "long",
     year: "numeric",
-    timeZone: "America/Sao_Paulo",
   });
 
   const linhas: string[] = [];

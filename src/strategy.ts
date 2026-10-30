@@ -39,13 +39,17 @@ function rankGroup(
   topN: number,
 ): Stock[] {
   // 2. Filtros básicos
+  // Para o grupo geral, exigimos evEbit > 0: valor zero ou negativo indica dado ausente
+  // ou EBIT negativo (prejuízo operacional), ambos inválidos para a estratégia.
+  const exigeEvEbit = metricas.includes("evEbit");
   let filtradas = acoes.filter(
     (a) =>
       (a.liquidezMedia ?? 0) >= liquidezMin &&
       a.pl !== null &&
       a.pl > 0 &&
       a.patLiq !== null &&
-      a.patLiq > 0,
+      a.patLiq > 0 &&
+      (!exigeEvEbit || (a.evEbit !== null && a.evEbit > 0)),
   );
 
   // 3. Deduplica classes da mesma empresa (raiz de 4 letras) → mais líquida
