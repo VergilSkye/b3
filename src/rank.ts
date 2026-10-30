@@ -5,7 +5,11 @@ import { DEFAULT_CONFIG } from "./config.js";
 import { calcDiffResult } from "./diff.js";
 import { gravarHtml } from "./report/ranking-html.js";
 import { fetchFundamentus } from "./sources/fundamentus.js";
-import { enriquecerComVolMock, selectPortfolio } from "./strategy.js";
+import { buildVolMap } from "./sources/prices.js";
+import { enriquecerComVol, selectPortfolio } from "./strategy.js";
+
+const CACHE_DIR = "data/cache";
+const VOL_COVERAGE_MIN = 0.8; // 80% mínimo de tickers com volatilidade
 
 const DATA_DIR = "data/rankings";
 const DOCS_DIR = "docs";
@@ -39,8 +43,22 @@ async function main() {
   const rawAcoes = await fetchFundamentus();
   console.log(`  ${rawAcoes.length} tickers coletados`);
 
-  // 2–4. Enriquecer com volatilidade mockada (M2 substituirá) e rodar estratégia
-  const acoes = enriquecerComVolMock(rawAcoes);
+  // 2. Calcular volatilidade real via COTAHIST
+  console.log("Calculando volatilidade via COTAHIST...");
+  const tickers = rawAcoes.map((a) => a.ticker);
+  const volMap = await buildVolMap(tickers, CACHE_DIR);
+
+  // Verificar cobertura mínima
+  const comVol = tickers.filter((t) => volMap.get(t) !== null).length;
+  const cobertura = tickers.length > 0 ? comVol / tickers.length : 0;
+  if (cobertura < VOL_COVERAGE_MIN) {
+    throw new Error(
+      `Cobertura de volatilidade insuficiente: ${(cobertura * 100).toFixed(1)}% (mínimo ${VOL_COVERAGE_MIN * 100}%)`,
+    );
+  }
+
+  // 3–4. Enriquecer e rodar estratégia
+  const acoes = enriquecerComVol(rawAcoes, volMap);
   const resultado = selectPortfolio(acoes, DEFAULT_CONFIG);
 
   console.log(`  Geral: ${resultado.geral.length} ações`);

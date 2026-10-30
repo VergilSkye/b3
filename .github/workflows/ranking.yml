@@ -43,10 +43,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --allow-build=@biomejs/biome --allow-build=esbuild
 
+      - name: Cache COTAHIST
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: cotahist-${{ github.run_id }}
+          restore-keys: |
+            cotahist-
+
       - name: Gerar ranking
         run: pnpm rank
-        env:
-          BRAPI_TOKEN: ${{ secrets.BRAPI_TOKEN }}
 
       - name: Commit ranking e docs
         run: |

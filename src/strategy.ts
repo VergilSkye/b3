@@ -55,12 +55,12 @@ function rankGroup(
   // 3. Deduplica classes da mesma empresa (raiz de 4 letras) → mais líquida
   filtradas = deduplicarClasses(filtradas);
 
-  // 4. Corte de volatilidade: descartar quartil superior
+  // 4. Corte de volatilidade: descartar quartil superior (ações sem vol passam)
   if (corteVol > 0 && filtradas.length > 0) {
-    const vols = filtradas.map((a) => a.volatilidade);
+    const vols = filtradas.map((a) => a.volatilidade).filter((v): v is number => v !== null);
     const limiarVol = quantile(vols, 1 - corteVol);
     if (limiarVol !== null) {
-      filtradas = filtradas.filter((a) => a.volatilidade <= limiarVol);
+      filtradas = filtradas.filter((a) => a.volatilidade === null || a.volatilidade <= limiarVol);
     }
   }
 
@@ -87,12 +87,24 @@ function deduplicarClasses(acoes: Stock[]): Stock[] {
 }
 
 /**
- * Enriquece RawStock[] com grupo e volatilidade (mockada para M1).
+ * Enriquece RawStock[] com grupo e volatilidade real a partir de um mapa.
+ * Tickers ausentes no mapa recebem volatilidade null.
  */
-export function enriquecerComVolMock(acoes: RawStock[], volMock = 0.3): Stock[] {
+export function enriquecerComVol(acoes: RawStock[], volMap: Map<string, number | null>): Stock[] {
+  return acoes.map((a) => ({
+    ...a,
+    volatilidade: volMap.get(a.ticker) ?? null,
+    grupo: isFinanceira(a.setor) ? "financeiro" : ("geral" as const),
+  }));
+}
+
+/**
+ * Enriquece RawStock[] com grupo e volatilidade mockada (testes / M1).
+ */
+export function enriquecerComVolMock(acoes: RawStock[], volMock: number | null = 0.3): Stock[] {
   return acoes.map((a) => ({
     ...a,
     volatilidade: volMock,
-    grupo: isFinanceira(a.setor) ? "financeiro" : "geral",
+    grupo: isFinanceira(a.setor) ? "financeiro" : ("geral" as const),
   }));
 }

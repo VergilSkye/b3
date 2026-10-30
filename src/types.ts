@@ -13,7 +13,7 @@ export interface RawStock {
 
 // Ação após enriquecimento com volatilidade
 export interface Stock extends RawStock {
-  volatilidade: number; // anualizada, desvio-padrão log-retornos × √252
+  volatilidade: number | null; // anualizada, desvio-padrão log-retornos × √252; null = sem dados
   grupo: "geral" | "financeiro";
 }
 
