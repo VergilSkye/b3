@@ -4,7 +4,9 @@ import type { RawStock } from "../types.js";
 import { parseBR } from "../utils/parseBR.js";
 import { retry } from "../utils/retry.js";
 
-const FUNDAMENTUS_URL = "https://www.fundamentus.com.br/resultado.php";
+const BASE_URL = "https://www.fundamentus.com.br";
+const RESULTADO_URL = `${BASE_URL}/resultado.php`;
+const BUSCA_URL = `${BASE_URL}/buscaavancada.php`;
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -27,7 +29,7 @@ const RawRowSchema = z.object({
 // 8:P/EBIT 9:P/Ativ Circ.Liq 10:EV/EBIT 11:EV/EBITDA 12:Mrg Bruta
 // 13:Mrg Ebit 14:Mrg. Líq. 15:Liq. Corr. 16:ROIC 17:ROE
 // 18:Liq.2meses 19:Patrim. Líq 20:Dív.Líq/Patrim. 21:Cresc. Rec.5a
-// A tabela NÃO tem coluna de setor — classificação feita pelo ticker.
+// A tabela NÃO tem coluna de setor — classificação feita pelo setor do POST.
 const COL_REAL = {
   ticker: 0,
   pl: 2,
@@ -38,11 +40,6 @@ const COL_REAL = {
   liquidezMedia: 18,
   patLiq: 19,
 };
-
-// Fallback quando setorMap não está disponível (testes offline / fixture sem setor)
-function setorFallback(_ticker: string): string {
-  return "Outros";
-}
 
 // Para a fixture de testes (que tem coluna Segmento), mapear por cabeçalho
 function buildColFixture(headers: string[]): typeof COL_REAL & { setor: number } {
@@ -60,21 +57,89 @@ function buildColFixture(headers: string[]): typeof COL_REAL & { setor: number }
   };
 }
 
-export async function fetchFundamentus(setorMap?: Map<string, string>): Promise<RawStock[]> {
+/**
+ * Busca a lista de setores parseando o <select name="setor"> de buscaavancada.php.
+ * Retorna apenas setores com id numérico válido.
+ */
+export async function fetchSetores(): Promise<Array<{ id: number; nome: string }>> {
   const html = await retry(async () => {
-    const res = await fetch(FUNDAMENTUS_URL, {
-      headers: { "User-Agent": USER_AGENT },
-    });
-    if (!res.ok) throw new Error(`Fundamentus HTTP ${res.status}`);
-    // Página em ISO-8859-1
+    const res = await fetch(BUSCA_URL, { headers: { "User-Agent": USER_AGENT } });
+    if (!res.ok) throw new Error(`buscaavancada HTTP ${res.status}`);
     const buf = await res.arrayBuffer();
     return new TextDecoder("latin1").decode(buf);
   });
 
-  return parseHtml(html, 50, setorMap);
+  const $ = cheerio.load(html);
+  const setores: Array<{ id: number; nome: string }> = [];
+
+  $('select[name="setor"] option').each((_i, el) => {
+    const value = $(el).attr("value");
+    const nome = $(el).text().trim();
+    if (!value || value === "" || !nome) return;
+    const id = Number(value);
+    if (Number.isFinite(id) && id > 0) {
+      setores.push({ id, nome });
+    }
+  });
+
+  if (setores.length === 0) {
+    throw new Error("Fundamentus: nenhum setor encontrado em buscaavancada.php");
+  }
+
+  return setores;
 }
 
-export function parseHtml(html: string, minRows = 50, setorMap?: Map<string, string>): RawStock[] {
+/**
+ * Coleta dados do Fundamentus fazendo POST para resultado.php?setor=N
+ * para cada setor. Retorna todos os tickers com o setor real.
+ *
+ * Usa POST por setor pois GET para resultado.php não retorna resultados.
+ */
+export async function fetchFundamentus(): Promise<RawStock[]> {
+  const setores = await fetchSetores();
+  console.log(`  ${setores.length} setores encontrados`);
+
+  const todos = new Map<string, RawStock>(); // keyed por ticker para dedup
+
+  for (const { id, nome } of setores) {
+    const html = await retry(async () => {
+      const res = await fetch(RESULTADO_URL, {
+        method: "POST",
+        headers: {
+          "User-Agent": USER_AGENT,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Referer: BUSCA_URL,
+        },
+        body: `setor=${id}&negociada=ON&ordem=1&x=28&y=16`,
+      });
+      if (!res.ok) throw new Error(`Fundamentus setor ${id} HTTP ${res.status}`);
+      const buf = await res.arrayBuffer();
+      return new TextDecoder("latin1").decode(buf);
+    });
+
+    const rows = parseHtml(html, 0, nome);
+    for (const row of rows) {
+      if (!todos.has(row.ticker)) todos.set(row.ticker, row);
+    }
+
+    // Pausa gentil para não sobrecarregar o servidor
+    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+  }
+
+  const result = Array.from(todos.values());
+  if (result.length < 50) {
+    throw new Error(`Fundamentus: apenas ${result.length} tickers — layout pode ter mudado`);
+  }
+
+  return result;
+}
+
+/**
+ * Parseia o HTML da tabela #resultado.
+ * setorOverride: nome do setor para ações quando a tabela não tem coluna de setor.
+ * minRows = 0 para requisições por setor (sem mínimo por página).
+ */
+export function parseHtml(html: string, minRows = 50, setorOverride?: string): RawStock[] {
   const $ = cheerio.load(html);
   const rows: RawStock[] = [];
 
@@ -97,10 +162,7 @@ export function parseHtml(html: string, minRows = 50, setorMap?: Map<string, str
     const ticker = (tickerCell.find("a").text().trim() || tickerCell.text().trim()).toUpperCase();
 
     const c = colFixture ?? COL_REAL;
-    const setor =
-      colFixture !== null
-        ? text(colFixture.setor)
-        : (setorMap?.get(ticker) ?? setorFallback(ticker));
+    const setor = colFixture !== null ? text(colFixture.setor) : (setorOverride ?? "Outros");
 
     const raw = {
       ticker,
