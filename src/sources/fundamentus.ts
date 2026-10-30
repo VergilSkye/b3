@@ -22,30 +22,67 @@ const RawRowSchema = z.object({
   roe: z.number().nullable(),
 });
 
-// Mapeamento: chave interna → possíveis textos de cabeçalho do Fundamentus
-const HEADER_MAP: Record<string, string[]> = {
-  ticker: ["papel"],
-  setor: ["segmento", "setor", "subsetor"],
-  pl: ["p/l"],
-  pvp: ["p/vp"],
-  evEbit: ["ev/ebit"],
-  pl12m: ["mrg. líq.", "mrg.líq.", "mrg liq"],
-  roe: ["roe"],
-  liquidezMedia: ["liq.2meses", "liq. 2meses", "liquidez 2m"],
-  patLiq: ["patrim. líq", "patrim líq", "patrimônio líq"],
+// Índices verificados na página real do Fundamentus resultado.php (2026-10):
+// 0:Papel 1:Cotação 2:P/L 3:P/VP 4:PSR 5:Div.Yield 6:P/Ativo 7:P/Cap.Giro
+// 8:P/EBIT 9:P/Ativ Circ.Liq 10:EV/EBIT 11:EV/EBITDA 12:Mrg Bruta
+// 13:Mrg Ebit 14:Mrg. Líq. 15:Liq. Corr. 16:ROIC 17:ROE
+// 18:Liq.2meses 19:Patrim. Líq 20:Dív.Líq/Patrim. 21:Cresc. Rec.5a
+// A tabela NÃO tem coluna de setor — classificação feita pelo ticker.
+const COL_REAL = {
+  ticker: 0,
+  pl: 2,
+  pvp: 3,
+  evEbit: 10,
+  pl12m: 14,
+  roe: 17,
+  liquidezMedia: 18,
+  patLiq: 19,
 };
 
-function buildColMap($: ReturnType<typeof cheerio.load>): Map<string, number> {
-  const colMap = new Map<string, number>();
-  $("#resultado thead th, #resultado thead td").each((i, el) => {
-    const text = $(el).text().trim().toLowerCase();
-    for (const [field, variants] of Object.entries(HEADER_MAP)) {
-      if (variants.some((v) => text.includes(v))) {
-        colMap.set(field, i);
-      }
-    }
-  });
-  return colMap;
+// Prefixos de tickers financeiros brasileiros conhecidos
+const PREFIXOS_FINANCEIROS = new Set([
+  "BBAS",
+  "ITUB",
+  "BBDC",
+  "SANB",
+  "BPAC",
+  "BRSR",
+  "BMGB",
+  "PINE",
+  "BGIP",
+  "BPAN",
+  "BAZA",
+  "BRIV",
+  "CRIV",
+  "IDVL",
+  "MODL",
+  "PRBC",
+  "BBSE",
+  "CXSE",
+  "IRBR",
+  "PSSA",
+  "ITSA",
+  "BRGE",
+]);
+
+function setorPorTicker(ticker: string): string {
+  return PREFIXOS_FINANCEIROS.has(ticker.slice(0, 4).toUpperCase()) ? "Bancos" : "Outros";
+}
+
+// Para a fixture de testes (que tem coluna Segmento), mapear por cabeçalho
+function buildColFixture(headers: string[]): typeof COL_REAL & { setor: number } {
+  const idx = (terms: string[]) => headers.findIndex((h) => terms.some((t) => h.includes(t)));
+  return {
+    ticker: idx(["papel"]),
+    setor: idx(["segmento", "setor"]),
+    pl: idx(["p/l"]),
+    pvp: idx(["p/vp"]),
+    evEbit: idx(["ev/ebit"]),
+    pl12m: idx(["mrg. líq", "mrg liq"]),
+    roe: idx(["roe"]),
+    liquidezMedia: idx(["liq.2meses"]),
+    patLiq: idx(["patrim"]),
+  };
 }
 
 export async function fetchFundamentus(): Promise<RawStock[]> {
@@ -66,10 +103,12 @@ export function parseHtml(html: string, minRows = 50): RawStock[] {
   const $ = cheerio.load(html);
   const rows: RawStock[] = [];
 
-  const colMap = buildColMap($);
+  const headers = $("#resultado thead th")
+    .map((_i, el) => $(el).text().trim().toLowerCase())
+    .get();
 
-  // Fallback para fixture de testes (sem thead), usa índices fixos baseados na fixture
-  const col = (field: string, fallback: number) => colMap.get(field) ?? fallback;
+  const hasSetor = headers.some((h) => h.includes("segmento") || h.includes("setor"));
+  const colFixture = hasSetor ? buildColFixture(headers) : null;
 
   $("#resultado tbody tr").each((_i, el) => {
     const cells = $(el).find("td");
@@ -77,16 +116,24 @@ export function parseHtml(html: string, minRows = 50): RawStock[] {
 
     const text = (i: number) => $(cells[i])?.text().trim() ?? "";
 
+    // Ticker: na página real está dentro de um <a>
+    const tickerIdx = colFixture?.ticker ?? COL_REAL.ticker;
+    const tickerCell = $(cells[tickerIdx]);
+    const ticker = (tickerCell.find("a").text().trim() || tickerCell.text().trim()).toUpperCase();
+
+    const c = colFixture ?? COL_REAL;
+    const setor = colFixture !== null ? text(colFixture.setor) : setorPorTicker(ticker);
+
     const raw = {
-      ticker: text(col("ticker", 0)),
-      setor: text(col("setor", 1)),
-      pl: parseBR(text(col("pl", 2))),
-      pvp: parseBR(text(col("pvp", 3))),
-      evEbit: parseBR(text(col("evEbit", 5))),
-      pl12m: parseBR(text(col("pl12m", 8))),
-      roe: parseBR(text(col("roe", 9))),
-      liquidezMedia: parseBR(text(col("liquidezMedia", 10))),
-      patLiq: parseBR(text(col("patLiq", 11))),
+      ticker,
+      setor,
+      pl: parseBR(text(c.pl)),
+      pvp: parseBR(text(c.pvp)),
+      evEbit: parseBR(text(c.evEbit)),
+      pl12m: parseBR(text(c.pl12m)),
+      roe: parseBR(text(c.roe)),
+      liquidezMedia: parseBR(text(c.liquidezMedia)),
+      patLiq: parseBR(text(c.patLiq)),
     };
 
     const parsed = RawRowSchema.safeParse(raw);
@@ -100,10 +147,4 @@ export function parseHtml(html: string, minRows = 50): RawStock[] {
   }
 
   return rows;
-}
-
-/** Exporta o mapa de colunas detectado (útil para debug). */
-export function debugColMap(html: string): Record<string, number> {
-  const $ = cheerio.load(html);
-  return Object.fromEntries(buildColMap($));
 }
