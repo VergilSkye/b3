@@ -1,5 +1,6 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createInterface } from "node:readline";
 import AdmZip from "adm-zip";
 
 const BASE_URL = "https://bvmf.bmfbovespa.com.br/InstDados/SerHist";
@@ -31,8 +32,25 @@ async function downloadZip(year: number, cacheDir: string): Promise<string> {
   return zipPath;
 }
 
+function extractTxt(zipPath: string, cacheDir: string): string {
+  const zip = new AdmZip(zipPath);
+  const entry = zip.getEntries()[0];
+  if (!entry) throw new Error(`ZIP vazio: ${zipPath}`);
+
+  const txtPath = join(cacheDir, entry.entryName);
+  if (!existsSync(txtPath)) {
+    console.log(`  Extraindo ${entry.entryName}...`);
+    zip.extractEntryTo(entry, cacheDir, false, true);
+  } else {
+    console.log(`  TXT em cache: ${entry.entryName}`);
+  }
+  return txtPath;
+}
+
 /**
  * Parseia conteúdo texto do COTAHIST (layout fixo, encoding latin1).
+ * Versão síncrona para testes com strings pequenas.
+ *
  * Filtra: TIPREG=01, CODBDI=02, TPMERC=010
  *
  * Layout relevante (posições base-0):
@@ -47,37 +65,64 @@ export function parseCotahist(content: string): Map<string, DailyPrice[]> {
   const result = new Map<string, DailyPrice[]>();
 
   for (const line of content.split("\n")) {
-    if (line.length < 121) continue;
-    if (line.slice(0, 2) !== "01") continue;
-    if (line.slice(10, 12) !== "02") continue;
-    if (line.slice(24, 27) !== "010") continue;
-
-    const date = line.slice(2, 10);
-    const ticker = line.slice(12, 24).trim();
-    const preult = Number.parseInt(line.slice(108, 121), 10);
-
-    if (!ticker || Number.isNaN(preult) || preult <= 0) continue;
-
-    const close = preult / 100;
-
-    let prices = result.get(ticker);
-    if (prices === undefined) {
-      prices = [];
-      result.set(ticker, prices);
-    }
-    prices.push({ date, close });
+    processCotahistLine(line, result);
   }
 
-  // Garantir ordem cronológica
-  for (const prices of result.values()) {
-    prices.sort((a, b) => a.date.localeCompare(b.date));
-  }
-
+  sortPrices(result);
   return result;
 }
 
 /**
- * Baixa (com cache) e parseia COTAHIST para os anos solicitados.
+ * Parseia arquivo COTAHIST em modo streaming (sem carregar tudo em memória).
+ * Necessário pois arquivos anuais superam 500 MB descomprimidos.
+ */
+async function parseCotahistFile(filePath: string): Promise<Map<string, DailyPrice[]>> {
+  const result = new Map<string, DailyPrice[]>();
+
+  const rl = createInterface({
+    input: createReadStream(filePath, { encoding: "latin1" }),
+    crlfDelay: Number.POSITIVE_INFINITY,
+  });
+
+  for await (const line of rl) {
+    processCotahistLine(line, result);
+  }
+
+  sortPrices(result);
+  return result;
+}
+
+function processCotahistLine(line: string, result: Map<string, DailyPrice[]>): void {
+  if (line.length < 121) return;
+  if (line.slice(0, 2) !== "01") return;
+  if (line.slice(10, 12) !== "02") return;
+  if (line.slice(24, 27) !== "010") return;
+
+  const date = line.slice(2, 10);
+  const ticker = line.slice(12, 24).trim();
+  const preult = Number.parseInt(line.slice(108, 121), 10);
+
+  if (!ticker || Number.isNaN(preult) || preult <= 0) return;
+
+  const close = preult / 100;
+
+  let prices = result.get(ticker);
+  if (prices === undefined) {
+    prices = [];
+    result.set(ticker, prices);
+  }
+  prices.push({ date, close });
+}
+
+function sortPrices(map: Map<string, DailyPrice[]>): void {
+  for (const prices of map.values()) {
+    prices.sort((a, b) => a.date.localeCompare(b.date));
+  }
+}
+
+/**
+ * Baixa (com cache), extrai e parseia COTAHIST para os anos solicitados.
+ * Extrai o TXT para disco para evitar o limite de string do Node.js (~536 MB).
  * Retorna Map<ticker, DailyPrice[]> ordenado por data.
  */
 export async function loadCotahist(
@@ -88,15 +133,10 @@ export async function loadCotahist(
 
   for (const year of years) {
     const zipPath = await downloadZip(year, cacheDir);
+    const txtPath = extractTxt(zipPath, cacheDir);
 
-    console.log(`  Extraindo ${zipPath}...`);
-    const zip = new AdmZip(zipPath);
-    const entries = zip.getEntries();
-    const entry = entries[0];
-    if (!entry) throw new Error(`ZIP vazio: ${zipPath}`);
-
-    const content = entry.getData().toString("latin1");
-    const priceMap = parseCotahist(content);
+    console.log(`  Parseando COTAHIST ${year}...`);
+    const priceMap = await parseCotahistFile(txtPath);
     console.log(`  ${priceMap.size} tickers no COTAHIST ${year}`);
 
     for (const [ticker, prices] of priceMap) {
@@ -109,10 +149,8 @@ export async function loadCotahist(
     }
   }
 
-  // Reordenar após merge
-  for (const prices of combined.values()) {
-    prices.sort((a, b) => a.date.localeCompare(b.date));
-  }
+  // Reordenar após merge dos dois anos
+  sortPrices(combined);
 
   return combined;
 }
