@@ -22,6 +22,32 @@ const RawRowSchema = z.object({
   roe: z.number().nullable(),
 });
 
+// Mapeamento: chave interna → possíveis textos de cabeçalho do Fundamentus
+const HEADER_MAP: Record<string, string[]> = {
+  ticker: ["papel"],
+  setor: ["segmento", "setor", "subsetor"],
+  pl: ["p/l"],
+  pvp: ["p/vp"],
+  evEbit: ["ev/ebit"],
+  pl12m: ["mrg. líq.", "mrg.líq.", "mrg liq"],
+  roe: ["roe"],
+  liquidezMedia: ["liq.2meses", "liq. 2meses", "liquidez 2m"],
+  patLiq: ["patrim. líq", "patrim líq", "patrimônio líq"],
+};
+
+function buildColMap($: ReturnType<typeof cheerio.load>): Map<string, number> {
+  const colMap = new Map<string, number>();
+  $("#resultado thead th, #resultado thead td").each((i, el) => {
+    const text = $(el).text().trim().toLowerCase();
+    for (const [field, variants] of Object.entries(HEADER_MAP)) {
+      if (variants.some((v) => text.includes(v))) {
+        colMap.set(field, i);
+      }
+    }
+  });
+  return colMap;
+}
+
 export async function fetchFundamentus(): Promise<RawStock[]> {
   const html = await retry(async () => {
     const res = await fetch(FUNDAMENTUS_URL, {
@@ -40,23 +66,27 @@ export function parseHtml(html: string, minRows = 50): RawStock[] {
   const $ = cheerio.load(html);
   const rows: RawStock[] = [];
 
-  // A tabela de resultados tem id="resultado"
+  const colMap = buildColMap($);
+
+  // Fallback para fixture de testes (sem thead), usa índices fixos baseados na fixture
+  const col = (field: string, fallback: number) => colMap.get(field) ?? fallback;
+
   $("#resultado tbody tr").each((_i, el) => {
     const cells = $(el).find("td");
-    if (cells.length < 13) return;
+    if (cells.length < 10) return;
 
-    const text = (i: number) => $(cells[i]).text().trim();
+    const text = (i: number) => $(cells[i])?.text().trim() ?? "";
 
     const raw = {
-      ticker: text(0),
-      setor: text(1),
-      liquidezMedia: parseBR(text(10)), // Liq.2meses
-      pl: parseBR(text(2)), // P/L
-      pvp: parseBR(text(3)), // P/VP
-      evEbit: parseBR(text(5)), // EV/EBIT
-      pl12m: parseBR(text(8)), // Lucro Liq. (para filtro)
-      patLiq: parseBR(text(11)), // Patrim. Líq
-      roe: parseBR(text(9)), // ROE
+      ticker: text(col("ticker", 0)),
+      setor: text(col("setor", 1)),
+      pl: parseBR(text(col("pl", 2))),
+      pvp: parseBR(text(col("pvp", 3))),
+      evEbit: parseBR(text(col("evEbit", 5))),
+      pl12m: parseBR(text(col("pl12m", 8))),
+      roe: parseBR(text(col("roe", 9))),
+      liquidezMedia: parseBR(text(col("liquidezMedia", 10))),
+      patLiq: parseBR(text(col("patLiq", 11))),
     };
 
     const parsed = RawRowSchema.safeParse(raw);
@@ -70,4 +100,10 @@ export function parseHtml(html: string, minRows = 50): RawStock[] {
   }
 
   return rows;
+}
+
+/** Exporta o mapa de colunas detectado (útil para debug). */
+export function debugColMap(html: string): Record<string, number> {
+  const $ = cheerio.load(html);
+  return Object.fromEntries(buildColMap($));
 }
