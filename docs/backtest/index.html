@@ -7,8 +7,18 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 1050px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h1 { border-bottom: 2px solid #333; padding-bottom: .5rem; }
+    h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2rem; color: #444; }
+    
+  .site-nav { display:flex; align-items:center; gap:1.5rem; padding:.5rem 0 .75rem; border-bottom:2px solid #e8e8e8; margin-bottom:1.75rem; flex-wrap:wrap; }
+  .nav-brand { font-weight:700; color:#222; font-size:.95rem; letter-spacing:.02em; margin-right:.25rem; }
+  .nav-links { display:flex; gap:.25rem; align-items:center; flex-wrap:wrap; }
+  .nav-pill { display:inline-block; padding:.25rem .75rem; border-radius:99px; font-size:.82rem; text-decoration:none; border:1px solid transparent; transition:background .15s; }
+  .nav-pill-active { background:#222; color:#fff; font-weight:600; cursor:default; }
+  .nav-pill-link { color:#0066cc; border-color:#cce0ff; background:#f0f7ff; }
+  .nav-pill-link:hover { background:#daeeff; }
+  .nav-date { font-size:.7rem; color:#888; margin-left:.3rem; }
+
     .chart-wrap { position: relative; height: 420px; margin: 1.5rem 0; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
     th, td { padding: .5rem .75rem; border: 1px solid #ddd; text-align: right; }
@@ -20,12 +30,19 @@
   </style>
 </head>
 <body>
+  <nav class="site-nav">
+  <span class="nav-brand">quant-b3</span>
+  <div class="nav-links">
+    <a href="../" class="nav-pill nav-pill-link">Ranking<span class="nav-date">30/10/2026</span></a>
+    <span class="nav-pill nav-pill-active">Backtest</span>
+    <a href="../scan/" class="nav-pill nav-pill-link">Scan CB<span class="nav-date">30/10/2026</span></a>
+  </div>
+</nav>
   <h1>Backtest quant-b3 — Grid de parâmetros</h1>
   <p>
     Estratégia quantitativa de valor, rebalanceamento semestral.<br>
     Período: <strong>2022-10-01</strong> → <strong>2026-10-01</strong>
     &nbsp;(8 semestres · 4.0 anos).
-    &nbsp;<a href="../index.html">← Ranking atual</a>
   </p>
 
   <h2>Curva de equity (base 100)</h2>
@@ -45,12 +62,76 @@
     </tr></thead>
     <tbody>
       <tr style="font-weight:bold;background:#fffbe6">
-      <td>base (n=20, vol=25%, EV/EBIT+P/L)</td>
+      <td>n=20 vol=25% mom=10%</td>
       <td>8.97%</td>
       <td>0.59</td>
       <td>-8.96%</td>
       <td>41.03%</td>
       <td>-5.75%</td>
+    </tr>
+<tr>
+      <td>n=15 vol=25% mom=10%</td>
+      <td>8.17%</td>
+      <td>0.55</td>
+      <td>-8.87%</td>
+      <td>36.89%</td>
+      <td>-6.56%</td>
+    </tr>
+<tr>
+      <td>n=25 vol=25% mom=10%</td>
+      <td>7.16%</td>
+      <td>0.49</td>
+      <td>-11.23%</td>
+      <td>31.86%</td>
+      <td>-7.56%</td>
+    </tr>
+<tr>
+      <td>n=20 vol=0% mom=10%</td>
+      <td>5.55%</td>
+      <td>0.37</td>
+      <td>-13.53%</td>
+      <td>24.12%</td>
+      <td>-9.17%</td>
+    </tr>
+<tr>
+      <td>n=20 vol=50% mom=10%</td>
+      <td>7.89%</td>
+      <td>0.60</td>
+      <td>-8.40%</td>
+      <td>35.49%</td>
+      <td>-6.83%</td>
+    </tr>
+<tr>
+      <td>n=20 só EV/EBIT mom=10%</td>
+      <td>9.76%</td>
+      <td>0.63</td>
+      <td>-8.79%</td>
+      <td>45.12%</td>
+      <td>-4.97%</td>
+    </tr>
+<tr>
+      <td>n=20 só P/L mom=10%</td>
+      <td>7.16%</td>
+      <td>0.44</td>
+      <td>-12.27%</td>
+      <td>31.85%</td>
+      <td>-7.57%</td>
+    </tr>
+<tr>
+      <td>n=20 sem momentum</td>
+      <td>7.89%</td>
+      <td>0.53</td>
+      <td>-9.44%</td>
+      <td>35.49%</td>
+      <td>-6.83%</td>
+    </tr>
+<tr>
+      <td>n=20 mom=20%</td>
+      <td>6.02%</td>
+      <td>0.42</td>
+      <td>-9.21%</td>
+      <td>26.34%</td>
+      <td>-8.70%</td>
     </tr>
       <tr style="font-style:italic;color:#555">
       <td>BOVA11 (benchmark)</td>
@@ -62,14 +143,14 @@
     </tbody>
   </table>
 
-  <footer>Gerado em 30/10/2026, 23:05:44 · quant-b3 · Não é recomendação de investimento.</footer>
+  <footer>Gerado em 30/10/2026, 23:31:29 · quant-b3 · Não é recomendação de investimento.</footer>
 
   <script>
     new Chart(document.getElementById('equity-chart'), {
       type: 'line',
       data: {
         labels: ["2022-10-01","2023-04-01","2023-10-01","2024-04-01","2024-10-01","2025-04-01","2025-10-01","2026-04-01","2026-10-01"],
-        datasets: [{"label":"base (n=20, vol=25%, EV/EBIT+P/L)","data":[100,95.3,115.11,123.07,122.05,114.67,138.82,154.91,141.03],"borderColor":"#e6194b","backgroundColor":"transparent","borderWidth":2.5,"tension":0.1},{"label":"BOVA11","data":[100,92.51,106.28,115.81,121.04,120.27,133.87,173,173.22],"borderColor":"#111","backgroundColor":"transparent","borderWidth":2.5,"borderDash":[6,3],"tension":0.1}],
+        datasets: [{"label":"n=20 vol=25% mom=10%","data":[100,95.3,115.11,123.07,122.05,114.67,138.82,154.91,141.03],"borderColor":"#e6194b","backgroundColor":"transparent","borderWidth":2.5,"tension":0.1},{"label":"n=15 vol=25% mom=10%","data":[100,94.55,113.05,121.99,119.17,111.81,132.6,150.21,136.89],"borderColor":"#3cb44b","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"n=25 vol=25% mom=10%","data":[100,94.38,111.88,120.51,116.26,106.98,128.6,144.01,131.86],"borderColor":"#4363d8","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"n=20 vol=0% mom=10%","data":[100,93.68,108.88,117.68,112.2,101.75,127.51,138.72,124.12],"borderColor":"#f58231","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"n=20 vol=50% mom=10%","data":[100,95.87,107.4,115.99,112.38,106.25,125.77,144.56,135.49],"borderColor":"#911eb4","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"n=20 só EV/EBIT mom=10%","data":[100,94.93,116.96,124.93,123.92,117.72,138.78,159.11,145.12],"borderColor":"#42d4f4","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"n=20 só P/L mom=10%","data":[100,92.99,114.92,125.11,118.32,113.86,139.43,150.29,131.85],"borderColor":"#f032e6","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"n=20 sem momentum","data":[100,93.93,109.47,117.79,114.51,106.67,130.6,146.27,135.49],"borderColor":"#e6194b","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"n=20 mom=20%","data":[100,90.79,106.39,114.7,111.38,104.61,126.74,139.03,126.34],"borderColor":"#3cb44b","backgroundColor":"transparent","borderWidth":1.5,"tension":0.1},{"label":"BOVA11","data":[100,92.51,106.28,115.81,121.04,120.27,133.87,173,173.22],"borderColor":"#111","backgroundColor":"transparent","borderWidth":2.5,"borderDash":[6,3],"tension":0.1}],
       },
       options: {
         responsive: true,
