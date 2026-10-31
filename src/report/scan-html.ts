@@ -6,19 +6,21 @@ export interface ScanEntry {
   rank: number;
   ticker: string;
   setor: string;
+  fator: string; // grupo setorial para limite de concentração
   evEbit: number;
   pl: number;
   pvp: number | null;
   retornoStock: number;
   retornoBova: number;
   quedaRelativa: number;
-  pctAboveMin52w: number | null; // % acima da mínima de 52 semanas (0 = na mínima)
+  pctAboveMin52w: number | null;
   low52wDate: string | null; // "DD/MM/YYYY"
   low52wPrice: number | null; // R$
-  alav: number | null; // P/L / EV/EBIT
-  knifScore: number; // 0–4 pontos de risco
+  conversao: number | null; // P/EBIT / P/L (eficiência operacional → lucro)
+  jurosAlerta: boolean; // conversao < 0,40 AND dívida líquida > 0
+  knifScore: number; // 0–5 pontos de risco
   score: number;
-  janelas: number; // em quantas janelas (30/60/90d) o ticker aparece: 1, 2 ou 3
+  janelas: number;
 }
 
 export interface ScanResult {
@@ -54,14 +56,15 @@ function janelasBadge(n: number): string {
 }
 
 function knifScoreBadge(score: number): string {
-  if (score >= 3) return `<span class="badge badge-red">&#128308; ${score}</span>`;
-  if (score === 2) return `<span class="badge badge-orange">&#128993; ${score}</span>`;
+  if (score >= 4) return `<span class="badge badge-red">&#128308; ${score}</span>`;
+  if (score >= 2) return `<span class="badge badge-orange">&#128993; ${score}</span>`;
   return `<span class="badge badge-green">&#128994; ${score}</span>`;
 }
 
-function alavBadge(alav: number | null): string {
-  if (alav === null || alav <= 2.5) return "";
-  return ` <span class="badge badge-orange">juros&#8593;</span>`;
+function jurosBadge(e: ScanEntry): string {
+  if (!e.jurosAlerta) return "";
+  const conv = e.conversao !== null ? ` (conv=${e.conversao.toFixed(2)})` : "";
+  return ` <span class="badge badge-orange" title="P/EBIT\u00f7P/L${conv} &lt; 0,40 e d\u00edvida l\u00edquida &gt; 0">juros&#8593;</span>`;
 }
 
 function tableHtml(entries: ScanEntry[], window: string, refDate: string): string {
@@ -74,7 +77,7 @@ function tableHtml(entries: ScanEntry[], window: string, refDate: string): strin
       <td><strong>${e.ticker}</strong>${near52wBadge(e)}</td>
       <td>${e.setor}</td>
       <td>${e.evEbit.toFixed(2)}</td>
-      <td>${e.pl.toFixed(2)}${alavBadge(e.alav)}</td>
+      <td>${e.pl.toFixed(2)}${jurosBadge(e)}</td>
       <td>${e.pvp !== null ? e.pvp.toFixed(2) : "—"}</td>
       <td style="color:${e.retornoStock < 0 ? "#c00" : "#080"}">${pct(e.retornoStock)}</td>
       <td style="color:${e.retornoBova < 0 ? "#c00" : "#080"}">${pct(e.retornoBova)}</td>
@@ -99,20 +102,19 @@ function tableHtml(entries: ScanEntry[], window: string, refDate: string): strin
   </table>`;
 }
 
-function sectorSummaryHtml(entries: Array<{ setor: string }>): string {
+function sectorSummaryHtml(entries: ScanEntry[]): string {
   const counts = new Map<string, number>();
-  for (const e of entries) counts.set(e.setor, (counts.get(e.setor) ?? 0) + 1);
+  for (const e of entries) counts.set(e.fator, (counts.get(e.fator) ?? 0) + 1);
   const total = entries.length;
   if (total === 0) return "";
   const parts = [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([setor, n]) => `<strong>${setor}</strong>: ${((n / total) * 100).toFixed(0)}%`)
+    .map(([fator, n]) => `<strong>${fator}</strong>: ${((n / total) * 100).toFixed(0)}%`)
     .join(" &nbsp;·&nbsp; ");
-  return `<p class="sector-summary">Distribuição setorial: ${parts}</p>`;
+  return `<p class="sector-summary">Distribuição por fator de risco: ${parts}</p>`;
 }
 
 function consensoHtml(result: ScanResult): string {
-  // Agrupa por ticker
   const all = [...result.top30d, ...result.top60d, ...result.top90d];
   const byTicker = new Map<string, ScanEntry[]>();
   for (const e of all) {
@@ -134,6 +136,8 @@ function consensoHtml(result: ScanResult): string {
     if (entries.length < 2) continue;
     const scoreMin = Math.min(...entries.map((e) => e.score));
     const knifScoreMax = Math.max(...entries.map((e) => e.knifScore));
+    // O knife score deve ser idêntico em todas as janelas (calculado uma vez).
+    // Se houver divergência, é um bug: usa o max e o log já foi emitido no scan.ts.
     consenso.push({
       ticker,
       janelas: entries.length,
@@ -146,15 +150,16 @@ function consensoHtml(result: ScanResult): string {
 
   if (consenso.length === 0) return "";
 
-  // Limite de 2 por setor
-  const sectorCount = new Map<string, number>();
+  // Limite de 2 por FATOR (não por setor)
+  const fatorCount = new Map<string, number>();
   const limited: ConsensoItem[] = [];
   const excluded: ConsensoItem[] = [];
   for (const c of consenso) {
-    const n = sectorCount.get(c.entry.setor) ?? 0;
+    const fator = c.entry.fator;
+    const n = fatorCount.get(fator) ?? 0;
     if (n < 2) {
       limited.push(c);
-      sectorCount.set(c.entry.setor, n + 1);
+      fatorCount.set(fator, n + 1);
     } else {
       excluded.push(c);
     }
@@ -165,8 +170,9 @@ function consensoHtml(result: ScanResult): string {
       (c) => `<tr>
       <td><strong>${c.ticker}</strong>${near52wBadge(c.entry)}</td>
       <td>${c.entry.setor}</td>
+      <td>${c.entry.fator}</td>
       <td>${c.entry.evEbit.toFixed(2)}</td>
-      <td>${c.entry.pl.toFixed(2)}${alavBadge(c.entry.alav)}</td>
+      <td>${c.entry.pl.toFixed(2)}${jurosBadge(c.entry)}</td>
       <td>${janelasBadge(c.janelas)}</td>
       <td>${c.entry.pctAboveMin52w !== null ? `+${pct(c.entry.pctAboveMin52w, 1)}` : "—"}</td>
       <td>${knifScoreBadge(c.knifScoreMax)}</td>
@@ -176,7 +182,7 @@ function consensoHtml(result: ScanResult): string {
 
   const excludedNote =
     excluded.length > 0
-      ? `<p class="note" style="margin-top:.5rem">Removidos por concentração setorial (&gt;2 por setor): ${excluded.map((c) => c.ticker).join(", ")}</p>`
+      ? `<p class="note" style="margin-top:.5rem">Removidos por concentração de fator (&gt;2 por grupo): ${excluded.map((c) => c.ticker).join(", ")}</p>`
       : "";
 
   return `
@@ -185,7 +191,7 @@ function consensoHtml(result: ScanResult): string {
   ${sectorSummaryHtml(limited.map((c) => c.entry))}
   <table>
     <thead><tr>
-      <th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Janelas</th><th>↑ Mín52s</th><th>Risco</th>
+      <th>Ticker</th><th>Setor</th><th>Fator</th><th>EV/EBIT</th><th>P/L</th><th>Janelas</th><th>↑ Mín52s</th><th>Risco</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
@@ -218,7 +224,7 @@ function corporateEventsHtml(
  * Gera docs/scan/index.html com os candidatos à recuperação pós circuit-breaker.
  */
 export function gravarScanHtml(result: ScanResult, outPath: string): void {
-  const docsDir = dirname(dirname(outPath)); // docs/scan/.. = docs/
+  const docsDir = dirname(dirname(outPath));
   mkdirSync(dirname(outPath), { recursive: true });
 
   const geradoEm = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
@@ -237,7 +243,7 @@ export function gravarScanHtml(result: ScanResult, outPath: string): void {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scan pós circuit-breaker — quant-b3</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 1300px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    body { font-family: system-ui, sans-serif; max-width: 1350px; margin: 2rem auto; padding: 0 1rem; color: #222; }
     h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2.5rem; color: #444; }
     ${NAV_CSS}
@@ -268,13 +274,14 @@ export function gravarScanHtml(result: ScanResult, outPath: string): void {
   </p>
   <div class="note">
     <strong>Metodologia:</strong> score = rank(queda relativa ↑) + rank(EV/EBIT ↑).
-    Filtragem: liquidez ≥ R$1M · EV/EBIT > 0 · P/L > 0 · financeiras excluídas · 1 ticker por empresa (mais líquido) · ↑ Mín52s &gt; 200% excluídos como evento corporativo.<br>
-    <strong>Queda relativa</strong> = retorno da ação − retorno BOVA11.
-    <strong>↑ Mín52s</strong>: % acima da mínima de 52 semanas (<span class="badge badge-red">Mín52s</span> ≤ 5%, <span class="badge badge-orange">~Mín52s</span> ≤ 15%).
-    <strong>Janelas</strong>: em quantas das 3 janelas aparece (<span class="badge badge-red">3/3</span> = mais persistente).
-    <strong>Risco</strong> = knife score 0–4 (<span class="badge badge-green">&#128994;</span> baixo · <span class="badge badge-orange">&#128993;</span> médio · <span class="badge badge-red">&#128308;</span> alto).
-    <strong>juros↑</strong> = P/L ÷ EV/EBIT &gt; 2,5 (dívida consome o lucro).
-    Consenso limitado a 2 tickers por setor.
+    Filtragem: liquidez ≥ R$1M · EV/EBIT &gt; 0 · P/L &gt; 0 · financeiras excluídas · 1 ticker por empresa · ↑ Mín52s &gt; 200% excluídos (evento corporativo).<br>
+    <strong>Risco</strong> = knife score 0–5 por ticker (calculado uma única vez, independente da janela):
+    (a) momentum 12m no decil inferior;
+    (b) ≤ 5% acima mín 52s;
+    (c) <strong>juros↑</strong>: P/EBIT÷P/L &lt; 0,40 <em>e</em> dívida líquida &gt; 0 (juros consomem o lucro operacional);
+    (d) lucro não-recorrente: D.Y. &gt; 20% ou P/L &gt; 50.
+    Escala: <span class="badge badge-green">&#128994;</span> 0–1 &nbsp;·&nbsp; <span class="badge badge-orange">&#128993;</span> 2–3 &nbsp;·&nbsp; <span class="badge badge-red">&#128308;</span> 4–5.<br>
+    Consenso limitado a 2 tickers por fator de risco (Imobiliário, Varejo, etc.).
   </div>
 
   ${consensoHtml(result)}

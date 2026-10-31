@@ -12,9 +12,34 @@ const CACHE_DIR = "data/cache";
 const SCAN_HTML = join("docs", "scan", "index.html");
 const LIQUIDEZ_MIN = 1_000_000;
 const TOP_N = 20;
-const NEAR_MIN52W_THRESHOLD = 0.15; // badge "~Mín52s" se dentro de 15%
+const NEAR_MIN52W_THRESHOLD = 0.15;
 const CORP_EVENT_THRESHOLD = 2.0; // ↑ Mín52s > 200% → excluir como evento corporativo
-const ALAV_THRESHOLD = 2.5; // P/L / EV/EBIT > 2.5 → "juros consomem lucro"
+
+// ── Agrupamento de setores em fatores ─────────────────────────────────────────
+// Usado para o limite de 2 por grupo no consenso.
+
+const FATOR_MAP: Record<string, string> = {
+  "Construção Civil": "Imobiliário",
+  "Exploração de Imóveis": "Imobiliário",
+  Incorporações: "Imobiliário",
+  Comércio: "Varejo",
+  "Comércio e Distribuição": "Varejo",
+  Varejo: "Varejo",
+  "Petróleo, Gás e Biocombustíveis": "Energia/Commodities",
+  "Energia Elétrica": "Energia/Commodities",
+  Mineração: "Energia/Commodities",
+  "Siderurgia e Metalurgia": "Energia/Commodities",
+  Agropecuária: "Alimentos",
+  "Alimentos Processados": "Alimentos",
+  Bebidas: "Alimentos",
+  Frigoríficos: "Alimentos",
+  "Locação de Máq. e Equip.": "Locação/Infraestrutura",
+  Transporte: "Locação/Infraestrutura",
+};
+
+function fatorSetor(setor: string): string {
+  return FATOR_MAP[setor] ?? setor;
+}
 
 // ── Helpers de data ──────────────────────────────────────────────────────────
 
@@ -52,7 +77,6 @@ interface Candidate extends RawStock {
 
 // ── Dedupe por raiz do ticker ─────────────────────────────────────────────────
 
-/** Raiz = primeiros 4 caracteres do ticker (ex. USIM3 → USIM). */
 function dedupeByRoot(candidates: Candidate[]): Candidate[] {
   const byRoot = new Map<string, Candidate>();
   for (const c of candidates) {
@@ -65,26 +89,85 @@ function dedupeByRoot(candidates: Candidate[]): Candidate[] {
   return [...byRoot.values()];
 }
 
-// ── Knife score ───────────────────────────────────────────────────────────────
+// ── Knife score (por ticker, calculado uma única vez) ─────────────────────────
+//
+// Componentes (0–5 pts, cada um vale 1):
+//   (a) Momentum 12m no decil inferior dos candidatos
+//   (b) Cotação ≤ 5% acima da mínima de 52 semanas
+//   (c) juros↑: conversao = P/EBIT ÷ P/L < 0,40 E dívida líquida > 0
+//   (d) Lucro não-recorrente: D.Y. > 20% OU P/L > 50
+//   (e) Queda forte: retorno no pior pregão nos últimos 30 dias > |25%|
+//       (não disponível no COTAHIST scan; substituído por queda vs BOVA > 20%)
+//
+// Escala: 0–1 🟢 · 2–3 🟡 · 4–5 🔴
 
-function calcKnifScore(
-  pctAboveMin52w: number | null,
-  alav: number | null,
-  pl: number,
-  retornoStock: number,
-): number {
-  let s = 0;
-  if (pctAboveMin52w !== null && pctAboveMin52w <= 0.05) s++; // na mínima de 52s
-  if (alav !== null && alav > ALAV_THRESHOLD) s++; // juros consomem lucro
-  if (pl > 15) s++; // P/L alto → margem estreita / resultado volátil
-  if (retornoStock < -0.25) s++; // queda forte na janela
-  return s;
+export interface KnifInfo {
+  score: number;
+  // sinais individuais para display
+  momBaixo: boolean; // (a)
+  nearMin52w: boolean; // (b)
+  jurosAlerta: boolean; // (c)
+  lucroNaoRecorrente: boolean; // (d)
+  // campos para auditoria
+  conversao: number | null; // P/EBIT / P/L
+}
+
+function buildKnifMap(
+  candidates: Candidate[],
+  priceToday: Map<string, number>,
+  low52w: Map<string, number>,
+  mom12mMap: Map<string, number | null>,
+): Map<string, KnifInfo> {
+  // Limiar do decil inferior do momentum (entre os candidatos com dados)
+  const moms = candidates
+    .map((c) => mom12mMap.get(c.ticker) ?? null)
+    .filter((v): v is number => v !== null)
+    .sort((a, b) => a - b);
+  const decileIdx = Math.max(0, Math.floor(moms.length * 0.1) - 1);
+  const momThreshold = moms[decileIdx] ?? -Number.POSITIVE_INFINITY;
+
+  const knifMap = new Map<string, KnifInfo>();
+
+  for (const c of candidates) {
+    const p1 = priceToday.get(c.ticker);
+    const low = low52w.get(c.ticker);
+    const pctAboveMin52w = p1 && low && low > 0 ? p1 / low - 1 : null;
+
+    const mom12m = mom12mMap.get(c.ticker) ?? null;
+
+    // (a) Momentum no decil inferior
+    const momBaixo = mom12m !== null && mom12m <= momThreshold;
+
+    // (b) Na mínima de 52 semanas (≤ 5%)
+    const nearMin52w = pctAboveMin52w !== null && pctAboveMin52w <= 0.05;
+
+    // (c) juros: conversao = P/EBIT / P/L < 0,40 E dívida líquida > 0
+    const conversao = c.pebit !== null && c.pebit > 0 && c.pl > 0 ? c.pebit / c.pl : null;
+    const jurosAlerta = conversao !== null && conversao < 0.4 && (c.divLiqPatrim ?? 0) > 0;
+
+    // (d) Lucro não-recorrente: D.Y. > 20% OU P/L > 50
+    const lucroNaoRecorrente = (c.dy !== null && c.dy > 0.2) || c.pl > 50;
+
+    const score = [momBaixo, nearMin52w, jurosAlerta, lucroNaoRecorrente].filter(Boolean).length;
+
+    knifMap.set(c.ticker, {
+      score,
+      momBaixo,
+      nearMin52w,
+      jurosAlerta,
+      lucroNaoRecorrente,
+      conversao,
+    });
+  }
+
+  return knifMap;
 }
 
 // ── Ranking por janela ────────────────────────────────────────────────────────
 
 function rankWindow(
   candidates: Candidate[],
+  knifMap: Map<string, KnifInfo>,
   priceToday: Map<string, number>,
   priceRef: Map<string, number>,
   low52w: Map<string, number>,
@@ -113,13 +196,20 @@ function rankWindow(
     const low52wDateFmt = lowDateRaw ? fmtDate(lowDateRaw) : null;
     const low52wPrice = low ?? null;
 
-    const alav = c.pl > 0 && c.evEbit > 0 ? c.pl / c.evEbit : null;
-    const ks = calcKnifScore(pctAboveMin52w, alav, c.pl, retornoStock);
+    const knif = knifMap.get(c.ticker) ?? {
+      score: 0,
+      momBaixo: false,
+      nearMin52w: false,
+      jurosAlerta: false,
+      lucroNaoRecorrente: false,
+      conversao: null,
+    };
 
     items.push({
       rank: 0,
       ticker: c.ticker,
       setor: c.setor,
+      fator: fatorSetor(c.setor),
       evEbit: c.evEbit,
       pl: c.pl,
       pvp: c.pvp,
@@ -129,19 +219,18 @@ function rankWindow(
       pctAboveMin52w,
       low52wDate: low52wDateFmt,
       low52wPrice,
-      alav,
-      knifScore: ks,
+      conversao: knif.conversao,
+      jurosAlerta: knif.jurosAlerta,
+      knifScore: knif.score,
       score: 0,
     });
   }
 
   if (items.length === 0) return [];
 
-  // Rank por queda relativa ascendente (mais negativa = melhor candidato)
   const byQueda = [...items].sort((a, b) => a.quedaRelativa - b.quedaRelativa);
   const rankQueda = new Map(byQueda.map((x, i) => [x.ticker, i + 1]));
 
-  // Rank por EV/EBIT ascendente (mais barato = melhor)
   const byEvEbit = [...items].sort((a, b) => a.evEbit - b.evEbit);
   const rankEvEbit = new Map(byEvEbit.map((x, i) => [x.ticker, i + 1]));
 
@@ -201,15 +290,10 @@ async function main() {
   }
   console.log("");
 
-  // 2. Carregar todos os price maps em um único pass do COTAHIST
+  // 2. Carregar price maps + mom12m (pass único do COTAHIST)
   console.log("Carregando price maps (pass único do COTAHIST)...");
-  const { priceToday, price30d, price60d, price90d, low52w, low52wDate } = await buildScanPriceMaps(
-    dateToday,
-    date30d,
-    date60d,
-    date90d,
-    CACHE_DIR,
-  );
+  const { priceToday, price30d, price60d, price90d, low52w, low52wDate, mom12mMap } =
+    await buildScanPriceMaps(dateToday, date30d, date60d, date90d, CACHE_DIR);
   console.log(
     `  tickers: hoje=${priceToday.size}  -30d=${price30d.size}  -60d=${price60d.size}  -90d=${price90d.size}  low52w=${low52w.size}\n`,
   );
@@ -219,7 +303,6 @@ async function main() {
   const rawAcoesBase = await fetchFundamentus();
   console.log(`  ${rawAcoesBase.length} tickers coletados`);
 
-  // Enriquecer setores com setor_map.json
   let setorMap: Record<string, string> = {};
   try {
     setorMap = JSON.parse(readFileSync("data/setor_map.json", "utf-8")) as Record<string, string>;
@@ -239,13 +322,13 @@ async function main() {
     return [{ ...a, liquidezMedia: a.liquidezMedia as number, evEbit: a.evEbit, pl: a.pl }];
   });
 
-  // 5. Dedupe por raiz do ticker — manter o mais líquido
+  // 5. Dedupe por raiz — manter o mais líquido
   const candidates = dedupeByRoot(rawCandidates);
   console.log(
-    `  ${rawCandidates.length} candidatos → ${candidates.length} após dedupe por empresa (financeiras excluídas)\n`,
+    `  ${rawCandidates.length} candidatos → ${candidates.length} após dedupe (financeiras excluídas)\n`,
   );
 
-  // 6. Detectar eventos corporativos não ajustados (↑ Mín52s > 200%)
+  // 6. Detectar eventos corporativos (↑ Mín52s > 200%)
   const corporateEvents: Array<{ ticker: string; setor: string; pctAboveMin52w: number }> = [];
   const cleanCandidates = candidates.filter((c) => {
     const p1 = priceToday.get(c.ticker);
@@ -265,11 +348,14 @@ async function main() {
     );
   }
 
-  // 7. Rankear por janela
+  // 7. Calcular knife score UMA VEZ por ticker (independente da janela)
+  const knifMap = buildKnifMap(cleanCandidates, priceToday, low52w, mom12mMap);
+
+  // 8. Rankear por janela (knife score reutilizado de knifMap)
   console.log("Rankeando candidatos...");
-  const raw30d = rankWindow(cleanCandidates, priceToday, price30d, low52w, low52wDate);
-  const raw60d = rankWindow(cleanCandidates, priceToday, price60d, low52w, low52wDate);
-  const raw90d = rankWindow(cleanCandidates, priceToday, price90d, low52w, low52wDate);
+  const raw30d = rankWindow(cleanCandidates, knifMap, priceToday, price30d, low52w, low52wDate);
+  const raw60d = rankWindow(cleanCandidates, knifMap, priceToday, price60d, low52w, low52wDate);
+  const raw90d = rankWindow(cleanCandidates, knifMap, priceToday, price90d, low52w, low52wDate);
 
   const { top30d, top60d, top90d } = attachJanelas(raw30d, raw60d, raw90d);
 
@@ -283,7 +369,21 @@ async function main() {
   console.log(`  90d: ${top90d.length} candidatos`);
   console.log(`  Consenso (2+/3 janelas): ${uniqConsenso.join(", ") || "nenhum"}\n`);
 
-  // 8. Exibir top-5 de cada janela + sinalizadores
+  // 9. Verificar consistência do knife score (teste de sanidade)
+  const allEntries = [...top30d, ...top60d, ...top90d];
+  const byTicker = new Map<string, number[]>();
+  for (const e of allEntries) {
+    const arr = byTicker.get(e.ticker) ?? [];
+    arr.push(e.knifScore);
+    byTicker.set(e.ticker, arr);
+  }
+  for (const [ticker, scores] of byTicker) {
+    if (new Set(scores).size > 1) {
+      console.warn(`  ⚠  knife score inconsistente para ${ticker}: ${scores.join(", ")}`);
+    }
+  }
+
+  // 10. Exibir top-5 de cada janela
   for (const [label, list] of [
     ["30d", top30d],
     ["60d", top60d],
@@ -293,18 +393,18 @@ async function main() {
     for (const e of list.slice(0, 5)) {
       const min52w =
         e.pctAboveMin52w !== null
-          ? `+${(e.pctAboveMin52w * 100).toFixed(1)}% acima mín (${e.low52wDate ?? "?"} R$${e.low52wPrice?.toFixed(2) ?? "?"})`
+          ? `+${(e.pctAboveMin52w * 100).toFixed(1)}% (${e.low52wDate ?? "?"} R$${e.low52wPrice?.toFixed(2) ?? "?"})`
           : "mín52s=?";
       const janelasMark = e.janelas === 3 ? "★★★" : e.janelas === 2 ? "★★" : "★";
-      const alavStr = e.alav !== null ? `  alav=${e.alav.toFixed(1)}` : "";
+      const convStr = e.conversao !== null ? `  conv=${e.conversao.toFixed(2)}` : "";
       console.log(
-        `  ${e.rank}. ${e.ticker.padEnd(7)} qrel=${(e.quedaRelativa * 100).toFixed(1)}%  EV/EBIT=${e.evEbit.toFixed(2)}  ${min52w}  ${janelasMark}  risco=${e.knifScore}${alavStr}`,
+        `  ${e.rank}. ${e.ticker.padEnd(7)} qrel=${(e.quedaRelativa * 100).toFixed(1)}%  EV/EBIT=${e.evEbit.toFixed(2)}  ${min52w}  ${janelasMark}  risco=${e.knifScore}${convStr}`,
       );
     }
     console.log("");
   }
 
-  // 9. Listar candidatos perto da mínima de 52 semanas
+  // 11. Listar candidatos perto da mínima de 52 semanas
   const near52wList = [...top30d, ...top60d, ...top90d]
     .filter((e, i, arr) => arr.findIndex((x) => x.ticker === e.ticker) === i)
     .filter((e) => e.pctAboveMin52w !== null && e.pctAboveMin52w <= NEAR_MIN52W_THRESHOLD)
@@ -314,13 +414,13 @@ async function main() {
     console.log(`Atenção — perto da mínima de 52 semanas (<= ${NEAR_MIN52W_THRESHOLD * 100}%):`);
     for (const e of near52wList) {
       console.log(
-        `  ${e.ticker.padEnd(7)} +${((e.pctAboveMin52w ?? 0) * 100).toFixed(1)}% acima mín (${e.low52wDate ?? "?"} R$${e.low52wPrice?.toFixed(2) ?? "?"})`,
+        `  ${e.ticker.padEnd(7)} +${((e.pctAboveMin52w ?? 0) * 100).toFixed(1)}% (${e.low52wDate ?? "?"} R$${e.low52wPrice?.toFixed(2) ?? "?"})`,
       );
     }
     console.log("");
   }
 
-  // 10. Gerar HTML
+  // 12. Gerar HTML
   gravarScanHtml(
     { dateToday, date30d, date60d, date90d, top30d, top60d, top90d, corporateEvents },
     SCAN_HTML,

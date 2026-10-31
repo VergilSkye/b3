@@ -29,6 +29,9 @@ const RawRowSchema = z.object({
   pl: z.number().nullable(),
   pvp: z.number().nullable(),
   evEbit: z.number().nullable(),
+  pebit: z.number().nullable(),
+  dy: z.number().nullable(),
+  divLiqPatrim: z.number().nullable(),
   pl12m: z.number().nullable(),
   patLiq: z.number().nullable(),
   roe: z.number().nullable(),
@@ -43,6 +46,8 @@ const RawRowSchema = z.object({
 // A tabela NÃO tem coluna de setor — classificação feita pelo setor do POST.
 const COL_REAL = {
   ticker: 0,
+  dy: 5,
+  pebit: 8,
   pl: 2,
   pvp: 3,
   evEbit: 10,
@@ -50,6 +55,7 @@ const COL_REAL = {
   roe: 17,
   liquidezMedia: 18,
   patLiq: 19,
+  divLiqPatrim: 20,
 };
 
 // Para a fixture de testes (que tem coluna Segmento), mapear por cabeçalho
@@ -58,6 +64,8 @@ function buildColFixture(headers: string[]): typeof COL_REAL & { setor: number }
   return {
     ticker: idx(["papel"]),
     setor: idx(["segmento", "setor"]),
+    dy: idx(["div.yield", "dy"]),
+    pebit: idx(["p/ebit"]),
     pl: idx(["p/l"]),
     pvp: idx(["p/vp"]),
     evEbit: idx(["ev/ebit"]),
@@ -65,6 +73,7 @@ function buildColFixture(headers: string[]): typeof COL_REAL & { setor: number }
     roe: idx(["roe"]),
     liquidezMedia: idx(["liq.2meses"]),
     patLiq: idx(["patrim"]),
+    divLiqPatrim: idx(["dív.líq", "div.liq"]),
   };
 }
 
@@ -161,6 +170,8 @@ export function parseHtml(html: string, minRows = 50, setorOverride?: string): R
     const raw = {
       ticker,
       setor,
+      dy: parseBR(text(c.dy)),
+      pebit: parseBR(text(c.pebit)),
       pl: parseBR(text(c.pl)),
       pvp: parseBR(text(c.pvp)),
       evEbit: parseBR(text(c.evEbit)),
@@ -168,6 +179,7 @@ export function parseHtml(html: string, minRows = 50, setorOverride?: string): R
       roe: parseBR(text(c.roe)),
       liquidezMedia: parseBR(text(c.liquidezMedia)),
       patLiq: parseBR(text(c.patLiq)),
+      divLiqPatrim: parseBR(text(c.divLiqPatrim)),
     };
 
     const parsed = RawRowSchema.safeParse(raw);

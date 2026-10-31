@@ -6,7 +6,10 @@ export interface RawStock {
   pl: number | null; // P/L
   pvp: number | null; // P/VP
   evEbit: number | null; // EV/EBIT
-  pl12m: number | null; // Lucro líquido 12m (para filtro > 0)
+  pebit: number | null; // P/EBIT (para cálculo de conversão operacional)
+  dy: number | null; // Dividend Yield (fração: 0.08 = 8%)
+  divLiqPatrim: number | null; // Dív.Líq/Patrim (> 0 = endividado)
+  pl12m: number | null; // Margem líquida 12m (Fundamentus) ou lucro/ação (CVM)
   patLiq: number | null; // Patrimônio líquido
   roe: number | null; // ROE (opcional, para financeiras)
   mom12m: number | null; // Momentum 12-1m: retorno de 13m atrás até 1m atrás

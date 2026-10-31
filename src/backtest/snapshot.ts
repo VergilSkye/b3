@@ -258,6 +258,9 @@ export async function buildSnapshot(
       pl,
       pvp,
       evEbit,
+      pebit: null, // não disponível via CVM DFP
+      dy: null,
+      divLiqPatrim: null,
       pl12m,
       patLiq,
       roe,
@@ -310,6 +313,7 @@ export interface ScanPriceMaps {
   price90d: Map<string, number>;
   low52w: Map<string, number>; // mínimo de fechamento nos últimos 252 pregões
   low52wDate: Map<string, string>; // data "YYYYMMDD" da mínima de 52 semanas
+  mom12mMap: Map<string, number | null>; // momentum 12-1m por ticker
 }
 
 /** Retorna último fechamento ≤ date para o ticker (bars ordenados asc). */
@@ -354,6 +358,7 @@ export async function buildScanPriceMaps(
   const price90d = new Map<string, number>();
   const low52w = new Map<string, number>();
   const low52wDate = new Map<string, string>();
+  const mom12mMap = new Map<string, number | null>();
 
   for (const [ticker, bars] of barMap) {
     if (bars.length === 0) continue;
@@ -382,7 +387,14 @@ export async function buildScanPriceMaps(
       low52w.set(ticker, lowPrice);
       low52wDate.set(ticker, lowDateStr);
     }
+
+    // Momentum 12-1m (mesmo cálculo de buildSnapshot)
+    const Nb = bars.length;
+    const p1mBar = Nb > MOM_DAYS_1M ? bars[Nb - 1 - MOM_DAYS_1M] : undefined;
+    const p13mBar = Nb > MOM_DAYS_13M ? bars[Nb - 1 - MOM_DAYS_13M] : undefined;
+    const mom12m = p1mBar && p13mBar && p13mBar.close > 0 ? p1mBar.close / p13mBar.close - 1 : null;
+    mom12mMap.set(ticker, mom12m);
   }
 
-  return { priceToday, price30d, price60d, price90d, low52w, low52wDate };
+  return { priceToday, price30d, price60d, price90d, low52w, low52wDate, mom12mMap };
 }
