@@ -121,6 +121,15 @@ function sortPrices(map: Map<string, DailyPrice[]>): void {
 }
 
 /**
+ * Garante que o ZIP foi baixado e o TXT extraído para o ano dado.
+ * Usado pelo backtest para preparar os arquivos antes de parsear por data.
+ */
+export async function ensureCotahistTxt(year: number, cacheDir: string): Promise<void> {
+  const zipPath = await downloadZip(year, cacheDir);
+  extractTxt(zipPath, cacheDir);
+}
+
+/**
  * Baixa (com cache), extrai e parseia COTAHIST para os anos solicitados.
  * Extrai o TXT para disco para evitar o limite de string do Node.js (~536 MB).
  * Retorna Map<ticker, DailyPrice[]> ordenado por data.

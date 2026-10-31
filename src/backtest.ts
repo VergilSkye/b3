@@ -5,6 +5,7 @@ import { buildLastPriceMap, buildSnapshot } from "./backtest/snapshot.js";
 import { DEFAULT_CONFIG } from "./config.js";
 import { gravarBacktestHtml } from "./report/backtest-html.js";
 import type { GridEntry } from "./report/backtest-html.js";
+import { ensureCotahistTxt } from "./sources/cotahist.js";
 import { enriquecerComVol, selectPortfolio } from "./strategy.js";
 import type { Config } from "./types.js";
 
@@ -127,7 +128,20 @@ async function main() {
   }
   console.log(`Períodos: ${REBALANCING_DATES.length - 1} × 6 meses\n`);
 
-  // 1. Pré-cachear snapshots (uma vez por data)
+  // 1. Garantir que todos os TXTs do COTAHIST existem (download+extração se necessário)
+  const cotahistYears = new Set<number>();
+  for (const date of REBALANCING_DATES) {
+    const y = Number.parseInt(date.slice(0, 4), 10);
+    cotahistYears.add(y - 1);
+    cotahistYears.add(y);
+  }
+  console.log(`Verificando COTAHIST para anos ${[...cotahistYears].sort().join(", ")}...`);
+  for (const year of [...cotahistYears].sort()) {
+    await ensureCotahistTxt(year, CACHE_DIR);
+  }
+  console.log("");
+
+  // 3. Pré-cachear snapshots (uma vez por data)
   console.log("Carregando snapshots...");
   const snapshotCache = new Map<string, SnapshotCache>();
   for (const date of REBALANCING_DATES.slice(0, -1)) {
@@ -135,7 +149,7 @@ async function main() {
     snapshotCache.set(date, await buildSnapshot(date, CACHE_DIR, CACHE_DIR));
   }
 
-  // 2. Pré-cachear price maps (uma vez por data, todas as datas)
+  // 4. Pré-cachear price maps (uma vez por data, todas as datas)
   console.log("\nCarregando price maps...");
   const priceCache = new Map<string, Map<string, number>>();
   for (const date of REBALANCING_DATES) {
