@@ -6,6 +6,7 @@
   "scripts": {
     "rank": "tsx src/rank.ts",
     "backtest": "tsx src/backtest.ts",
+    "scan": "tsx src/scan.ts",
     "notify": "tsx src/notify.ts",
     "test": "vitest run",
     "test:watch": "vitest",
