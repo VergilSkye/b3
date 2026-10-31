@@ -1,0 +1,79 @@
+name: backtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      grid:
+        description: "Rodar grid de parâmetros (--grid)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: backtest
+  cancel-in-progress: false
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --allow-build=@biomejs/biome --allow-build=esbuild
+
+      - name: Cache COTAHIST e DFP
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: backtest-cache-${{ github.run_id }}
+          restore-keys: |
+            backtest-cache-
+            cotahist-
+
+      - name: Rodar backtest
+        run: |
+          if [ "${{ inputs.grid }}" = "true" ]; then
+            pnpm backtest --grid
+          else
+            pnpm backtest
+          fi
+
+      - name: Commit docs/backtest
+        run: |
+          git config user.name "backtest-bot"
+          git config user.email "backtest-bot@users.noreply.github.com"
+          git add docs/backtest
+          git commit -m "backtest $(date +%Y-%m-%d)" || exit 0
+          git push
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
