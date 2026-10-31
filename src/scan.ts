@@ -1,12 +1,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { buildB3Maps } from "./backtest/mapping.js";
 import { buildScanPriceMaps } from "./backtest/snapshot.js";
 import { isFinanceira } from "./config.js";
 import { gravarScanHtml } from "./report/scan-html.js";
 import type { ScanEntry } from "./report/scan-html.js";
+import type { Candidate, KnifInfo } from "./scan-knife.js";
+import { buildKnifMap } from "./scan-knife.js";
 import { ensureCotahistTxt } from "./sources/cotahist.js";
 import { fetchFundamentus } from "./sources/fundamentus.js";
-import type { RawStock } from "./types.js";
+import { loadItr } from "./sources/itr.js";
 
 const CACHE_DIR = "data/cache";
 const SCAN_HTML = join("docs", "scan", "index.html");
@@ -37,8 +40,17 @@ const FATOR_MAP: Record<string, string> = {
   Transporte: "Locação/Infraestrutura",
 };
 
-function fatorSetor(setor: string): string {
-  return FATOR_MAP[setor] ?? setor;
+// Overrides explícitos para tickers classificados como "Diversos" no Fundamentus
+const TICKER_FATOR_OVERRIDE: Record<string, string> = {
+  VAMO3: "Locação",
+  MOVI3: "Locação",
+  COGN3: "Educação",
+  VTRU3: "Educação",
+  QUAL3: "Saúde",
+};
+
+function fatorSetor(ticker: string, setor: string): string {
+  return TICKER_FATOR_OVERRIDE[ticker] ?? FATOR_MAP[setor] ?? setor;
 }
 
 // ── Helpers de data ──────────────────────────────────────────────────────────
@@ -69,12 +81,6 @@ function fmtDate(yyyymmdd: string): string {
 
 // ── Candidatos ───────────────────────────────────────────────────────────────
 
-interface Candidate extends RawStock {
-  liquidezMedia: number;
-  evEbit: number;
-  pl: number;
-}
-
 // ── Dedupe por raiz do ticker ─────────────────────────────────────────────────
 
 function dedupeByRoot(candidates: Candidate[]): Candidate[] {
@@ -87,80 +93,6 @@ function dedupeByRoot(candidates: Candidate[]): Candidate[] {
     }
   }
   return [...byRoot.values()];
-}
-
-// ── Knife score (por ticker, calculado uma única vez) ─────────────────────────
-//
-// Componentes (0–5 pts, cada um vale 1):
-//   (a) Momentum 12m no decil inferior dos candidatos
-//   (b) Cotação ≤ 5% acima da mínima de 52 semanas
-//   (c) juros↑: conversao = P/EBIT ÷ P/L < 0,40 E dívida líquida > 0
-//   (d) Lucro não-recorrente: D.Y. > 20% OU P/L > 50
-//   (e) Queda forte: retorno no pior pregão nos últimos 30 dias > |25%|
-//       (não disponível no COTAHIST scan; substituído por queda vs BOVA > 20%)
-//
-// Escala: 0–1 🟢 · 2–3 🟡 · 4–5 🔴
-
-export interface KnifInfo {
-  score: number;
-  // sinais individuais para display
-  momBaixo: boolean; // (a)
-  nearMin52w: boolean; // (b)
-  jurosAlerta: boolean; // (c)
-  lucroNaoRecorrente: boolean; // (d)
-  // campos para auditoria
-  conversao: number | null; // P/EBIT / P/L
-}
-
-function buildKnifMap(
-  candidates: Candidate[],
-  priceToday: Map<string, number>,
-  low52w: Map<string, number>,
-  mom12mMap: Map<string, number | null>,
-): Map<string, KnifInfo> {
-  // Limiar do decil inferior do momentum (entre os candidatos com dados)
-  const moms = candidates
-    .map((c) => mom12mMap.get(c.ticker) ?? null)
-    .filter((v): v is number => v !== null)
-    .sort((a, b) => a - b);
-  const decileIdx = Math.max(0, Math.floor(moms.length * 0.1) - 1);
-  const momThreshold = moms[decileIdx] ?? -Number.POSITIVE_INFINITY;
-
-  const knifMap = new Map<string, KnifInfo>();
-
-  for (const c of candidates) {
-    const p1 = priceToday.get(c.ticker);
-    const low = low52w.get(c.ticker);
-    const pctAboveMin52w = p1 && low && low > 0 ? p1 / low - 1 : null;
-
-    const mom12m = mom12mMap.get(c.ticker) ?? null;
-
-    // (a) Momentum no decil inferior
-    const momBaixo = mom12m !== null && mom12m <= momThreshold;
-
-    // (b) Na mínima de 52 semanas (≤ 5%)
-    const nearMin52w = pctAboveMin52w !== null && pctAboveMin52w <= 0.05;
-
-    // (c) juros: conversao = P/EBIT / P/L < 0,40 E dívida líquida > 0
-    const conversao = c.pebit !== null && c.pebit > 0 && c.pl > 0 ? c.pebit / c.pl : null;
-    const jurosAlerta = conversao !== null && conversao < 0.4 && (c.divLiqPatrim ?? 0) > 0;
-
-    // (d) Lucro não-recorrente: D.Y. > 20% OU P/L > 50
-    const lucroNaoRecorrente = (c.dy !== null && c.dy > 0.2) || c.pl > 50;
-
-    const score = [momBaixo, nearMin52w, jurosAlerta, lucroNaoRecorrente].filter(Boolean).length;
-
-    knifMap.set(c.ticker, {
-      score,
-      momBaixo,
-      nearMin52w,
-      jurosAlerta,
-      lucroNaoRecorrente,
-      conversao,
-    });
-  }
-
-  return knifMap;
 }
 
 // ── Ranking por janela ────────────────────────────────────────────────────────
@@ -209,7 +141,7 @@ function rankWindow(
       rank: 0,
       ticker: c.ticker,
       setor: c.setor,
-      fator: fatorSetor(c.setor),
+      fator: fatorSetor(c.ticker, c.setor),
       evEbit: c.evEbit,
       pl: c.pl,
       pvp: c.pvp,
@@ -313,6 +245,21 @@ async function main() {
     a.setor === "Outros" && setorMap[a.ticker] ? { ...a, setor: setorMap[a.ticker] as string } : a,
   );
 
+  // 3b. Carregar ITR trimestral + mapa CNPJ→ticker
+  const anoAtual = Number.parseInt(dateToday.slice(0, 4), 10);
+  console.log("Carregando ITR CVM...");
+  const itrMap = await loadItr(anoAtual, CACHE_DIR);
+  console.log(`  ${itrMap.size} empresas com dados trimestrais\n`);
+
+  console.log("Carregando mapa de empresas B3...");
+  const b3Maps = await buildB3Maps(CACHE_DIR);
+  // Raiz do ticker (4 letras) → CNPJ 14 dígitos
+  const cnpjByCodigo4 = new Map<string, string>();
+  for (const [cnpj, info] of b3Maps.porCnpj) {
+    cnpjByCodigo4.set(info.codigo4, cnpj);
+  }
+  console.log(`  ${cnpjByCodigo4.size} tickers mapeados\n`);
+
   // 4. Filtrar candidatos — excluir financeiras
   const rawCandidates: Candidate[] = rawAcoes.flatMap((a) => {
     if (isFinanceira(a.setor)) return [];
@@ -349,7 +296,15 @@ async function main() {
   }
 
   // 7. Calcular knife score UMA VEZ por ticker (independente da janela)
-  const knifMap = buildKnifMap(cleanCandidates, priceToday, low52w, mom12mMap);
+  const knifMap = buildKnifMap(
+    cleanCandidates,
+    priceToday,
+    low52w,
+    mom12mMap,
+    itrMap,
+    cnpjByCodigo4,
+    dateToday,
+  );
 
   // 8. Rankear por janela (knife score reutilizado de knifMap)
   console.log("Rankeando candidatos...");

@@ -275,12 +275,15 @@ export function gravarScanHtml(result: ScanResult, outPath: string): void {
   <div class="note">
     <strong>Metodologia:</strong> score = rank(queda relativa ↑) + rank(EV/EBIT ↑).
     Filtragem: liquidez ≥ R$1M · EV/EBIT &gt; 0 · P/L &gt; 0 · financeiras excluídas · 1 ticker por empresa · ↑ Mín52s &gt; 200% excluídos (evento corporativo).<br>
-    <strong>Risco</strong> = knife score 0–5 por ticker (calculado uma única vez, independente da janela):
-    (a) momentum 12m no decil inferior;
-    (b) ≤ 5% acima mín 52s;
-    (c) <strong>juros↑</strong>: P/EBIT÷P/L &lt; 0,40 <em>e</em> dívida líquida &gt; 0 (juros consomem o lucro operacional);
-    (d) lucro não-recorrente: D.Y. &gt; 20% ou P/L &gt; 50.
-    Escala: <span class="badge badge-green">&#128994;</span> 0–1 &nbsp;·&nbsp; <span class="badge badge-orange">&#128993;</span> 2–3 &nbsp;·&nbsp; <span class="badge badge-red">&#128308;</span> 4–5.<br>
+    <strong>Risco</strong> = knife score 0–7 por ticker (calculado uma única vez, independente da janela):
+    (a) momentum 12-1m no decil inferior;
+    (b) ≤ 5% acima da mínima de 52s;
+    (c) <strong>juros↑</strong>: P/EBIT÷P/L &lt; 0,40 <em>e</em> Dív.Líq/Patrim &gt; 0,5 (não marca se P/L &gt; 50);
+    (d) lucro não-recorrente: D.Y. &gt; 20% ou P/L &gt; 50;
+    (e) lucro trimestral negativo ou &lt; mesmo trimestre do ano anterior (ITR CVM);
+    (f) dívida líquida subiu &gt; 20% no último trimestre (ITR CVM);
+    (g) último ITR recebido há &gt; 120 dias.
+    Escala: <span class="badge badge-green">&#128994;</span> 0–1 &nbsp;·&nbsp; <span class="badge badge-orange">&#128993;</span> 2–3 &nbsp;·&nbsp; <span class="badge badge-red">&#128308;</span> 4+.<br>
     Consenso limitado a 2 tickers por fator de risco (Imobiliário, Varejo, etc.).
   </div>
 
