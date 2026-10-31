@@ -254,8 +254,79 @@ Só `workflow_dispatch` com inputs (período, grid). `actions/cache` para `data/
 | **M5** | Ingestão CVM + COTAHIST com cache | snapshot de qualquer data passada |
 | **M6** | Motor de backtest + métricas | curva de 1 config vs Ibovespa |
 | **M7** | Grid + relatório in/out-of-sample | página de backtest publicada |
-| **M8** | Ajustar `config.ts` com base no backtest | ranking mensal usa parâmetros validados |
-| **M9** | `pnpm scan` — candidatos pós circuit-breaker | top-20 por janela (30/60/90d) publicado em `docs/scan/` |
+| **M8** | Ajustar `config.ts` com base no backtest | ranking mensal usa parâmetros validados | ✓ |
+| **M9** | `pnpm scan` — candidatos pós circuit-breaker | top-20 por janela (30/60/90d) publicado em `docs/scan/` | ✓ |
+| **M10** | Calculadora de posição integrada (rank + scan) | B2/T1/T2/Stop/Qtd calculados no browser via σ anual | ✓ |
+| **M11** | Critérios de alerta (knife score) — ITR/CVM | 7 critérios (a–g): mom, 52w min, juros↑, lucro não-recorrente, queda tri, dívida sobe, ITR atrasado | ✓ |
+
+---
+
+## 10. Melhorias planejadas (próximas sessões)
+
+### M12 — Ajuste de preços por proventos/desdobramentos (COTAHIST)
+- COTAHIST não ajusta preços por dividendos/splits → retornos no scan podem estar distorcidos quando ex-div cai dentro da janela de 30/60/90d
+- Implementar fator de ajuste usando o campo `FATOR_AJUSTE` do COTAHIST ou evento de desdobramento do registro tipo 5
+- Validar: comparar série VALE3/PETR4 contra Yahoo Finance; logar divergências > 5%
+
+### M13 — Tracker do experimento pessoal
+- Página `/docs/experimento/index.html` para acompanhar a carteira pessoal (5 ações, R$3.500, 90d)
+- Campos: ticker, data entrada, preço entrada, qtd, alvo 1, alvo 2, stop
+- Retorno acumulado vs BOVA11 e CDI (referência local, sem servidor)
+- Pode usar `localStorage` para persistir os dados no browser ou um CSV em `data/`
+
+### M14 — GitHub Actions: `scan.yml`
+- Workflow para rodar `pnpm scan` semanalmente (ou via `workflow_dispatch`)
+- Cache `data/cache/` entre runs (COTAHIST pesa ~2 GB/ano)
+- Notificação Telegram com candidatos do dia
+- Publicar `docs/scan/` via Pages
+
+### M15 — Re-executar backtest
+- `docs/backtest/index.html` está desatualizado: não tem barra de nav, rótulos sem "mom=10%"
+- Rodar `pnpm backtest --grid` via GitHub Actions ou localmente
+- Comparar resultados antes/depois do filtro de momentum
+
+### M16 — Histórico de scan (últimos 6 meses)
+- Salvar cada run de `pnpm scan` como `data/scan/AAAA-MM-DD.json`
+- Página de scan exibir quais tickers aparecem consistentemente em múltiplas datas (sinal mais forte)
+
+---
+
+## 11. Arquitetura atual (pós-M11)
+
+### Novos arquivos desde M8
+
+| Arquivo | Função |
+|---|---|
+| `src/sources/itr.ts` | Download/parse CVM ITR Q1–Q3; `loadItr(ano, cacheDir)` → `Map<cnpj14, ItrTrimestre>` |
+| `src/scan-knife.ts` | 7 critérios de alerta; `buildKnifMap(candidates, priceToday, low52w, mom12mMap, itrMap, cnpjByCodigo4, dateToday)` |
+| `src/report/nav.ts` | Barra de nav compartilhada; `navHtml(active, dates)`, `NAV_CSS`, `htmlMtime()` |
+| `src/build.ts` | `pnpm build`: HTML offline de `data/rankings/*.csv` sem rede |
+
+### Calculadora de posição (M10)
+
+Fórmulas por σ anual:
+- σ₃₀d = σ × 0.29; σ₉₀d = σ × 0.50
+- **B2** = P × (1 − 0.5 × σ₃₀d) &nbsp;— segundo ponto de entrada
+- **T1** = P × (1 + 0.5 × σ₉₀d) &nbsp;— alvo parcial
+- **T2** = P × (1 + σ₉₀d) &nbsp;— alvo total
+- **Stop** = P × (1 − 0.5 × σ₉₀d)
+- **Qtd B1** = ⌊(alloc/2) / preço⌋; **Qtd B2** = ⌊(alloc/2) / B2⌋
+
+Implementado como JS embutido em HTML gerado (sem build step no browser).
+
+### Knife score (M11)
+
+| Critério | Condição | Flag |
+|---|---|---|
+| a | mom12m no decil inferior | `momBaixo` |
+| b | preço ≤ 5% acima da mínima de 52 semanas | `nearMin52w` |
+| c | juros↑: conversao < 0.4 AND divLiqPatrim > 0.5 AND P/L ≤ 50 | `jurosAlerta` |
+| d | DY > 20% OR P/L > 50 (lucro não-recorrente) | `lucroNaoRecorrente` |
+| e | lucroLiqTri < 0 OU < lucroLiqTriAA (via ITR) | `lucroQuedaTri` |
+| f | dividaLiq subiu > 20% q/q OU caixa→dívida | `dividaSubiu` |
+| g | ITR mais velho que 120 dias | `itrAtrasado` |
+
+Escala: 0–1 🟢, 2–3 🟡, 4+ 🔴
 
 ---
 
