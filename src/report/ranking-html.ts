@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "csv-parse/sync";
+import { NAV_CSS, htmlMtime, navHtml } from "./nav.js";
 
 interface CsvRow {
   ticker: string;
@@ -86,7 +87,7 @@ function historicoHtml(historico: HistoricoEntry[]): string {
 </table>`;
 }
 
-export function gerarHtml(csvPath: string, mes: string, dataDir: string): string {
+export function gerarHtml(csvPath: string, mes: string, dataDir: string, docsDir: string): string {
   const content = readFileSync(csvPath, "utf-8");
   const rows = parse(content, { columns: true, skip_empty_lines: true }) as CsvRow[];
 
@@ -94,13 +95,21 @@ export function gerarHtml(csvPath: string, mes: string, dataDir: string): string
   const financeiras = rows.filter((r) => r.grupo === "financeiro");
   const historicoGeral = carregarHistorico(dataDir, "geral");
 
-  // Usar construtor local (year, month, day) evita o bug de UTC:
-  // new Date("2026-10-01") = meia-noite UTC = 30/09 em UTC-3 → "setembro"
+  // Usar construtor local (year, month, day) evita o bug de UTC
   const [anoStr, mesStr] = mes.split("-");
   const mesLabel = new Date(Number(anoStr), Number(mesStr) - 1, 1).toLocaleString("pt-BR", {
     month: "long",
     year: "numeric",
   });
+
+  const geradoEm = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+  const dates: Partial<Record<"backtest" | "scan", string>> = {};
+  const btDate = htmlMtime(join(docsDir, "backtest", "index.html"));
+  const scDate = htmlMtime(join(docsDir, "scan", "index.html"));
+  if (btDate) dates.backtest = btDate;
+  if (scDate) dates.scan = scDate;
+  const nav = navHtml("ranking", dates);
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -109,17 +118,19 @@ export function gerarHtml(csvPath: string, mes: string, dataDir: string): string
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ranking B3 — ${mesLabel}</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h1 { border-bottom: 2px solid #333; padding-bottom: .5rem; }
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2rem; color: #444; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
     th, td { padding: .5rem .75rem; border: 1px solid #ddd; text-align: left; }
     thead tr { background: #f4f4f4; }
     tbody tr:nth-child(even) { background: #fafafa; }
     footer { margin-top: 3rem; font-size: .8rem; color: #888; }
+    ${NAV_CSS}
   </style>
 </head>
 <body>
+  ${nav}
   <h1>Ranking B3 — ${mesLabel}</h1>
   <p><em>Estratégia quantitativa de valor. Não é recomendação de investimento.</em></p>
 
@@ -134,13 +145,13 @@ export function gerarHtml(csvPath: string, mes: string, dataDir: string): string
 
   ${historicoHtml(historicoGeral)}
 
-  <footer>Gerado em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · quant-b3</footer>
+  <footer>Gerado em ${geradoEm} · quant-b3 · Não é recomendação de investimento.</footer>
 </body>
 </html>`;
 }
 
 export function gravarHtml(csvPath: string, mes: string, dataDir: string, docsDir: string): void {
   mkdirSync(docsDir, { recursive: true });
-  const html = gerarHtml(csvPath, mes, dataDir);
+  const html = gerarHtml(csvPath, mes, dataDir, docsDir);
   writeFileSync(join(docsDir, "index.html"), html, "utf-8");
 }

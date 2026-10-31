@@ -1,7 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import type { PeriodResult } from "../backtest/engine.js";
 import type { BacktestMetrics } from "../backtest/metrics.js";
+import { NAV_CSS, htmlMtime, navHtml } from "./nav.js";
 
 export interface GridEntry {
   label: string;
@@ -118,6 +119,14 @@ export function gravarBacktestHtml(entries: GridEntry[], outPath: string): void 
     timeZone: "America/Sao_Paulo",
   });
 
+  const docsDir = dirname(outPath);
+  const dates: Partial<Record<"ranking" | "scan", string>> = {};
+  const rkDate = htmlMtime(join(docsDir, "../index.html"));
+  const scDate = htmlMtime(join(docsDir, "../scan/index.html"));
+  if (rkDate) dates.ranking = rkDate;
+  if (scDate) dates.scan = scDate;
+  const nav = navHtml("backtest", dates);
+
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -127,8 +136,9 @@ export function gravarBacktestHtml(entries: GridEntry[], outPath: string): void 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 1050px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h1 { border-bottom: 2px solid #333; padding-bottom: .5rem; }
+    h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2rem; color: #444; }
+    ${NAV_CSS}
     .chart-wrap { position: relative; height: 420px; margin: 1.5rem 0; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
     th, td { padding: .5rem .75rem; border: 1px solid #ddd; text-align: right; }
@@ -140,12 +150,12 @@ export function gravarBacktestHtml(entries: GridEntry[], outPath: string): void 
   </style>
 </head>
 <body>
+  ${nav}
   <h1>Backtest quant-b3 — Grid de parâmetros</h1>
   <p>
     Estratégia quantitativa de valor, rebalanceamento semestral.<br>
     Período: <strong>${labels[0]}</strong> → <strong>${labels[labels.length - 1]}</strong>
     &nbsp;(${base.metrics.nPeriods} semestres · ${(base.metrics.nPeriods * 0.5).toFixed(1)} anos).
-    &nbsp;<a href="../index.html">← Ranking atual</a>
   </p>
 
   <h2>Curva de equity (base 100)</h2>

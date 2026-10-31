@@ -300,3 +300,77 @@ export async function buildLastPriceMap(
   }
   return priceMap;
 }
+
+// ── buildScanPriceMaps ────────────────────────────────────────────────────────
+
+export interface ScanPriceMaps {
+  priceToday: Map<string, number>;
+  price30d: Map<string, number>;
+  price60d: Map<string, number>;
+  price90d: Map<string, number>;
+  low52w: Map<string, number>; // mínimo de fechamento nos últimos 252 pregões
+}
+
+/** Retorna último fechamento ≤ date para o ticker (bars ordenados asc). */
+function lastCloseAtOrBefore(bars: DayBar[], date: string): number | null {
+  for (let i = bars.length - 1; i >= 0; i--) {
+    if ((bars[i] as DayBar).date <= date) return (bars[i] as DayBar).close;
+  }
+  return null;
+}
+
+/**
+ * Carrega COTAHIST uma única vez e extrai todos os price maps necessários
+ * para o scan (hoje + 3 janelas de referência + mínima 52 semanas).
+ */
+export async function buildScanPriceMaps(
+  dateToday: string, // "AAAA-MM-DD"
+  date30d: string,
+  date60d: string,
+  date90d: string,
+  cotahistDir: string,
+): Promise<ScanPriceMaps> {
+  const simDate = dateToday.replace(/-/g, "");
+  const d30 = date30d.replace(/-/g, "");
+  const d60 = date60d.replace(/-/g, "");
+  const d90 = date90d.replace(/-/g, "");
+
+  const simYear = Number.parseInt(dateToday.slice(0, 4), 10);
+  const years = [simYear - 1, simYear];
+  const barMap = new Map<string, DayBar[]>();
+
+  for (const year of years) {
+    const txtPath = join(cotahistDir, `COTAHIST_A${year}.TXT`);
+    if (!existsSync(txtPath)) continue;
+    console.log(`  [scan] Parseando COTAHIST ${year}...`);
+    const extra = await parseCotahistUpTo(txtPath, simDate);
+    mergeBarMaps(barMap, extra);
+  }
+
+  const priceToday = new Map<string, number>();
+  const price30d = new Map<string, number>();
+  const price60d = new Map<string, number>();
+  const price90d = new Map<string, number>();
+  const low52w = new Map<string, number>();
+
+  for (const [ticker, bars] of barMap) {
+    if (bars.length === 0) continue;
+
+    priceToday.set(ticker, (bars[bars.length - 1] as DayBar).close);
+
+    const p30 = lastCloseAtOrBefore(bars, d30);
+    if (p30 !== null) price30d.set(ticker, p30);
+
+    const p60 = lastCloseAtOrBefore(bars, d60);
+    if (p60 !== null) price60d.set(ticker, p60);
+
+    const p90 = lastCloseAtOrBefore(bars, d90);
+    if (p90 !== null) price90d.set(ticker, p90);
+
+    const recent = bars.slice(-TRADING_DAYS_12M);
+    const low = Math.min(...recent.map((b) => b.close));
+    if (Number.isFinite(low)) low52w.set(ticker, low);
+  }
+
+  return { priceToday, price30d, price60d, price90d, low52w };
+}

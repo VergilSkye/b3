@@ -5,51 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ranking B3 — outubro de 2026</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h1 { border-bottom: 2px solid #333; padding-bottom: .5rem; }
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2rem; color: #444; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
     th, td { padding: .5rem .75rem; border: 1px solid #ddd; text-align: left; }
     thead tr { background: #f4f4f4; }
     tbody tr:nth-child(even) { background: #fafafa; }
     footer { margin-top: 3rem; font-size: .8rem; color: #888; }
+    
+  .site-nav { display:flex; align-items:center; gap:1.5rem; padding:.5rem 0 .75rem; border-bottom:2px solid #e8e8e8; margin-bottom:1.75rem; flex-wrap:wrap; }
+  .nav-brand { font-weight:700; color:#222; font-size:.95rem; letter-spacing:.02em; margin-right:.25rem; }
+  .nav-links { display:flex; gap:.25rem; align-items:center; flex-wrap:wrap; }
+  .nav-pill { display:inline-block; padding:.25rem .75rem; border-radius:99px; font-size:.82rem; text-decoration:none; border:1px solid transparent; transition:background .15s; }
+  .nav-pill-active { background:#222; color:#fff; font-weight:600; cursor:default; }
+  .nav-pill-link { color:#0066cc; border-color:#cce0ff; background:#f0f7ff; }
+  .nav-pill-link:hover { background:#daeeff; }
+  .nav-date { font-size:.7rem; color:#888; margin-left:.3rem; }
+
   </style>
 </head>
 <body>
+  <nav class="site-nav">
+  <span class="nav-brand">quant-b3</span>
+  <div class="nav-links">
+    <span class="nav-pill nav-pill-active">Ranking</span>
+    <a href="backtest/" class="nav-pill nav-pill-link">Backtest<span class="nav-date">30/10/2026</span></a>
+    <a href="scan/" class="nav-pill nav-pill-link">Scan CB<span class="nav-date">30/10/2026</span></a>
+  </div>
+</nav>
   <h1>Ranking B3 — outubro de 2026</h1>
   <p><em>Estratégia quantitativa de valor. Não é recomendação de investimento.</em></p>
 
   <h2>Top geral — EV/EBIT + P/L</h2>
-  <table><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Score</th></tr></thead><tbody>
-<tr><td>1</td><td><b>ALLD3</b></td><td>Comércio</td><td>3.15</td><td>1.36</td><td>58.8%</td><td>11M</td><td>4</td></tr>
-<tr><td>2</td><td><b>VTRU3</b></td><td>Diversos</td><td>3.35</td><td>1.61</td><td>61.4%</td><td>21M</td><td>7</td></tr>
-<tr><td>3</td><td><b>TEND3</b></td><td>Construção Civil</td><td>3.3</td><td>4.24</td><td>61.0%</td><td>140M</td><td>11</td></tr>
-<tr><td>4</td><td><b>JHSF3</b></td><td>Construção Civil</td><td>4.18</td><td>2.88</td><td>50.6%</td><td>62M</td><td>13</td></tr>
-<tr><td>5</td><td><b>USIM5</b></td><td>Siderurgia e Metalurgia</td><td>4.07</td><td>4.32</td><td>48.0%</td><td>90M</td><td>18</td></tr>
-<tr><td>6</td><td><b>POMO4</b></td><td>Material de Transporte</td><td>4.72</td><td>3.85</td><td>43.3%</td><td>90M</td><td>19</td></tr>
-<tr><td>7</td><td><b>EUCA4</b></td><td>Madeira e Papel</td><td>4.19</td><td>4.31</td><td>45.9%</td><td>2M</td><td>19</td></tr>
-<tr><td>8</td><td><b>VLID3</b></td><td>Serviços Diversos</td><td>3.53</td><td>4.86</td><td>44.1%</td><td>6M</td><td>19</td></tr>
-<tr><td>9</td><td><b>DIRR3</b></td><td>Construção Civil</td><td>4</td><td>4.9</td><td>54.0%</td><td>153M</td><td>21</td></tr>
-<tr><td>10</td><td><b>PFRM3</b></td><td>Comércio e Distribuição</td><td>4.04</td><td>5.39</td><td>50.8%</td><td>2M</td><td>25</td></tr>
-<tr><td>11</td><td><b>LREN3</b></td><td>Comércio</td><td>2.14</td><td>6.05</td><td>59.6%</td><td>321M</td><td>25</td></tr>
-<tr><td>12</td><td><b>PETR4</b></td><td>Petróleo, Gás e Biocombustíveis</td><td>4.23</td><td>5.09</td><td>30.4%</td><td>2.6B</td><td>28</td></tr>
-<tr><td>13</td><td><b>GMAT3</b></td><td>Comércio e Distribuição</td><td>4.84</td><td>4.96</td><td>58.2%</td><td>38M</td><td>32</td></tr>
-<tr><td>14</td><td><b>BEEF3</b></td><td>Alimentos Processados</td><td>4.46</td><td>5.56</td><td>53.6%</td><td>102M</td><td>33</td></tr>
-<tr><td>15</td><td><b>VULC3</b></td><td>Tecidos, Vestuário e Calçados</td><td>6.54</td><td>3.94</td><td>39.2%</td><td>43M</td><td>39</td></tr>
-<tr><td>16</td><td><b>LEVE3</b></td><td>Automóveis e Motocicletas</td><td>5.55</td><td>5.88</td><td>30.6%</td><td>13M</td><td>46</td></tr>
-<tr><td>17</td><td><b>CURY3</b></td><td>Construção Civil</td><td>4.75</td><td>7.26</td><td>47.5%</td><td>164M</td><td>46</td></tr>
-<tr><td>18</td><td><b>MELK3</b></td><td>Construção Civil</td><td>7.29</td><td>3.95</td><td>40.0%</td><td>2M</td><td>52</td></tr>
-<tr><td>19</td><td><b>VIVA3</b></td><td>Tecidos, Vestuário e Calçados</td><td>5.58</td><td>6.98</td><td>52.4%</td><td>91M</td><td>52</td></tr>
-<tr><td>20</td><td><b>SYNE3</b></td><td>Exploração de Imóveis</td><td>4.95</td><td>7.54</td><td>47.7%</td><td>2M</td><td>52</td></tr>
+  <table><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Mom12m</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Score</th></tr></thead><tbody>
+<tr><td>1</td><td><b>ALLD3</b></td><td>Comércio</td><td>3.15</td><td>1.36</td><td>-</td><td>58.8%</td><td>11M</td><td>4</td></tr>
+<tr><td>2</td><td><b>VTRU3</b></td><td>Diversos</td><td>3.35</td><td>1.61</td><td>-</td><td>61.4%</td><td>21M</td><td>7</td></tr>
+<tr><td>3</td><td><b>TEND3</b></td><td>Construção Civil</td><td>3.3</td><td>4.24</td><td>-</td><td>61.0%</td><td>140M</td><td>11</td></tr>
+<tr><td>4</td><td><b>JHSF3</b></td><td>Construção Civil</td><td>4.18</td><td>2.88</td><td>-</td><td>50.6%</td><td>62M</td><td>13</td></tr>
+<tr><td>5</td><td><b>USIM5</b></td><td>Siderurgia e Metalurgia</td><td>4.07</td><td>4.32</td><td>-</td><td>48.0%</td><td>90M</td><td>18</td></tr>
+<tr><td>6</td><td><b>POMO4</b></td><td>Material de Transporte</td><td>4.72</td><td>3.85</td><td>-</td><td>43.3%</td><td>90M</td><td>19</td></tr>
+<tr><td>7</td><td><b>EUCA4</b></td><td>Madeira e Papel</td><td>4.19</td><td>4.31</td><td>-</td><td>45.9%</td><td>2M</td><td>19</td></tr>
+<tr><td>8</td><td><b>VLID3</b></td><td>Serviços Diversos</td><td>3.53</td><td>4.86</td><td>-</td><td>44.1%</td><td>6M</td><td>19</td></tr>
+<tr><td>9</td><td><b>DIRR3</b></td><td>Construção Civil</td><td>4</td><td>4.9</td><td>-</td><td>54.0%</td><td>153M</td><td>21</td></tr>
+<tr><td>10</td><td><b>PFRM3</b></td><td>Comércio e Distribuição</td><td>4.04</td><td>5.39</td><td>-</td><td>50.8%</td><td>2M</td><td>25</td></tr>
+<tr><td>11</td><td><b>LREN3</b></td><td>Comércio</td><td>2.14</td><td>6.05</td><td>-</td><td>59.6%</td><td>321M</td><td>25</td></tr>
+<tr><td>12</td><td><b>PETR4</b></td><td>Petróleo, Gás e Biocombustíveis</td><td>4.23</td><td>5.09</td><td>-</td><td>30.4%</td><td>2.6B</td><td>28</td></tr>
+<tr><td>13</td><td><b>GMAT3</b></td><td>Comércio e Distribuição</td><td>4.84</td><td>4.96</td><td>-</td><td>58.2%</td><td>38M</td><td>32</td></tr>
+<tr><td>14</td><td><b>BEEF3</b></td><td>Alimentos Processados</td><td>4.46</td><td>5.56</td><td>-</td><td>53.6%</td><td>102M</td><td>33</td></tr>
+<tr><td>15</td><td><b>VULC3</b></td><td>Tecidos, Vestuário e Calçados</td><td>6.54</td><td>3.94</td><td>-</td><td>39.2%</td><td>43M</td><td>39</td></tr>
+<tr><td>16</td><td><b>LEVE3</b></td><td>Automóveis e Motocicletas</td><td>5.55</td><td>5.88</td><td>-</td><td>30.6%</td><td>13M</td><td>46</td></tr>
+<tr><td>17</td><td><b>CURY3</b></td><td>Construção Civil</td><td>4.75</td><td>7.26</td><td>-</td><td>47.5%</td><td>164M</td><td>46</td></tr>
+<tr><td>18</td><td><b>MELK3</b></td><td>Construção Civil</td><td>7.29</td><td>3.95</td><td>-</td><td>40.0%</td><td>2M</td><td>52</td></tr>
+<tr><td>19</td><td><b>VIVA3</b></td><td>Tecidos, Vestuário e Calçados</td><td>5.58</td><td>6.98</td><td>-</td><td>52.4%</td><td>91M</td><td>52</td></tr>
+<tr><td>20</td><td><b>SYNE3</b></td><td>Exploração de Imóveis</td><td>4.95</td><td>7.54</td><td>-</td><td>47.7%</td><td>2M</td><td>52</td></tr>
 </tbody></table>
 
   <h2>Financeiras — P/VP + P/L</h2>
-  <table><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>P/VP</th><th>P/L</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Score</th></tr></thead><tbody>
-<tr><td>1</td><td><b>BRSR6</b></td><td>Intermediários Financeiros</td><td>0.44</td><td>3.3</td><td>40.3%</td><td>46M</td><td>2</td></tr>
-<tr><td>2</td><td><b>BMGB4</b></td><td>Intermediários Financeiros</td><td>0.77</td><td>5.3</td><td>38.9%</td><td>11M</td><td>6</td></tr>
-<tr><td>3</td><td><b>ABCB4</b></td><td>Intermediários Financeiros</td><td>0.82</td><td>5.85</td><td>34.2%</td><td>21M</td><td>8</td></tr>
-<tr><td>4</td><td><b>WIZC3</b></td><td>Previdência e Seguros</td><td>1.27</td><td>4.73</td><td>38.8%</td><td>7M</td><td>9</td></tr>
-<tr><td>5</td><td><b>BBDC4</b></td><td>Intermediários Financeiros</td><td>0.82</td><td>6.05</td><td>39.5%</td><td>1.2B</td><td>9</td></tr>
+  <table><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>P/VP</th><th>P/L</th><th>Mom12m</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Score</th></tr></thead><tbody>
+<tr><td>1</td><td><b>BRSR6</b></td><td>Intermediários Financeiros</td><td>0.44</td><td>3.3</td><td>-</td><td>40.3%</td><td>46M</td><td>2</td></tr>
+<tr><td>2</td><td><b>BMGB4</b></td><td>Intermediários Financeiros</td><td>0.77</td><td>5.3</td><td>-</td><td>38.9%</td><td>11M</td><td>6</td></tr>
+<tr><td>3</td><td><b>ABCB4</b></td><td>Intermediários Financeiros</td><td>0.82</td><td>5.85</td><td>-</td><td>34.2%</td><td>21M</td><td>8</td></tr>
+<tr><td>4</td><td><b>WIZC3</b></td><td>Previdência e Seguros</td><td>1.27</td><td>4.73</td><td>-</td><td>38.8%</td><td>7M</td><td>9</td></tr>
+<tr><td>5</td><td><b>BBDC4</b></td><td>Intermediários Financeiros</td><td>0.82</td><td>6.05</td><td>-</td><td>39.5%</td><td>1.2B</td><td>9</td></tr>
 </tbody></table>
 
   
@@ -61,6 +79,6 @@
   </tbody>
 </table>
 
-  <footer>Gerado em 30/10/2026, 21:28:15 · quant-b3</footer>
+  <footer>Gerado em 30/10/2026, 23:15:19 · quant-b3 · Não é recomendação de investimento.</footer>
 </body>
 </html>
