@@ -7,11 +7,13 @@ const CVM_DFP_BASE = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/DFP/DADOS";
 
 // Contas do plano de contas CVM que nos interessam
 const CONTAS_DRE = { ebit: "3.05", lucroLiq: "3.11" };
-const CONTAS_BPP = { patLiq: "2.03", dividaCP: "2.01.04", dividaLP: "2.02.01" };
+// patLiqIfrs: bancos/seguradoras IFRS usam 2.07 em vez de 2.03 para PL
+const CONTAS_BPP = { patLiq: "2.03", patLiqIfrs: "2.07", dividaCP: "2.01.04", dividaLP: "2.02.01" };
 const CONTAS_BPA = { caixa: "1.01.01" };
 
 export interface FundamentoCVM {
   cnpj: string; // "33.000.167/0001-01"
+  cdCvm: string; // código CVM numérico, sem zeros à esquerda (ex: "9512")
   denom: string; // "PETROLEO BRASILEIRO S.A. PETROBRAS"
   dtRefer: string; // "AAAA-12-31" — fim do exercício
   dtReceb: string; // data de recebimento CVM (look-ahead bias)
@@ -106,7 +108,13 @@ export async function loadDfp(ano: number, cacheDir: string): Promise<Map<string
   // --- Master: CNPJ → (dtRefer, dtReceb, versao) ---
   // Filtrar apenas exercícios encerrados em 31/12
   const masterRows = parseCsv(entryStr(zip, `${p}_${ano}.csv`));
-  type MasterEntry = { dtRefer: string; dtReceb: string; denom: string; versao: number };
+  type MasterEntry = {
+    dtRefer: string;
+    dtReceb: string;
+    denom: string;
+    cdCvm: string;
+    versao: number;
+  };
   const masterMap = new Map<string, MasterEntry>(); // key = cnpj
 
   for (const row of masterRows) {
@@ -120,6 +128,7 @@ export async function loadDfp(ano: number, cacheDir: string): Promise<Map<string
         dtRefer: col(row, "DT_REFER"),
         dtReceb: col(row, "DT_RECEB"),
         denom: col(row, "DENOM_CIA"),
+        cdCvm: String(Number(col(row, "CD_CVM")) || 0), // strip leading zeros
         versao,
       });
     }
@@ -199,12 +208,20 @@ export async function loadDfp(ano: number, cacheDir: string): Promise<Map<string
 
     result.push({
       cnpj,
+      cdCvm: master.cdCvm,
       denom: master.denom,
       dtRefer: master.dtRefer,
       dtReceb: master.dtReceb,
       ebit: dre.ebit ?? null,
       lucroLiq: dre.lucroLiq ?? null,
-      patLiq: bpp.patLiq ?? null,
+      // Bancos IFRS usam 2.07; regular usa 2.03. Se ambos existem, o maior é o PL real.
+      patLiq:
+        bpp.patLiq !== null &&
+        bpp.patLiq !== undefined &&
+        bpp.patLiqIfrs !== null &&
+        bpp.patLiqIfrs !== undefined
+          ? Math.max(bpp.patLiq, bpp.patLiqIfrs)
+          : (bpp.patLiq ?? bpp.patLiqIfrs ?? null),
       caixa: bpa.caixa ?? null,
       dividaCP: bpp.dividaCP ?? null,
       dividaLP: bpp.dividaLP ?? null,

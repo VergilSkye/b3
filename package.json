@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "rank": "tsx src/rank.ts",
-    "backtest": "tsx src/backtest/engine.ts",
+    "backtest": "tsx src/backtest.ts",
     "notify": "tsx src/notify.ts",
     "test": "vitest run",
     "test:watch": "vitest",

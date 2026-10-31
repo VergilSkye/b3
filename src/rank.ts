@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { stringify } from "csv-stringify/sync";
 import { DEFAULT_CONFIG } from "./config.js";
@@ -40,8 +40,19 @@ async function main() {
 
   // 1. Coleta (setor real incluído via POST por setor no fetchFundamentus)
   console.log("Coletando dados do Fundamentus (por setor)...");
-  const rawAcoes = await fetchFundamentus();
-  console.log(`  ${rawAcoes.length} tickers coletados`);
+  const rawAcoesBase = await fetchFundamentus();
+  console.log(`  ${rawAcoesBase.length} tickers coletados`);
+
+  // Enriquecer setores com setor_map.json (43 setores do Fundamentus)
+  let setorMap: Record<string, string> = {};
+  try {
+    setorMap = JSON.parse(readFileSync("data/setor_map.json", "utf-8")) as Record<string, string>;
+  } catch {
+    /* sem mapa — mantém setores do fetchFundamentus */
+  }
+  const rawAcoes = rawAcoesBase.map((a) =>
+    a.setor === "Outros" && setorMap[a.ticker] ? { ...a, setor: setorMap[a.ticker] as string } : a,
+  );
 
   // 2. Calcular volatilidade real via COTAHIST
   // Pré-filtrar candidatos: Fundamentus inclui BDRs e FIIs que não existem no
