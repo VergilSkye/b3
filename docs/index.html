@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ranking B3 — outubro de 2026</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; color: #222; }
     h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2rem; color: #444; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { padding: .5rem .75rem; border: 1px solid #ddd; text-align: left; }
+    th, td { padding: .5rem .75rem; border: 1px solid #ddd; text-align: left; white-space: nowrap; }
     thead tr { background: #f4f4f4; }
     tbody tr:nth-child(even) { background: #fafafa; }
     footer { margin-top: 3rem; font-size: .8rem; color: #888; }
+    .calc-controls { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin:.75rem 0 1rem; font-size:.9rem; }
+    .calc-controls input[type=number] { border:1px solid #bbb; border-radius:3px; padding:.2rem .35rem; font-size:.875rem; }
+    .rk-inp-price { border:1px solid #bbb; border-radius:3px; padding:.15rem .3rem; font-size:.8rem; }
+    .rk-stop { color:#c00; font-weight:bold; }
     
   .site-nav { display:flex; align-items:center; gap:1.5rem; padding:.5rem 0 .75rem; border-bottom:2px solid #e8e8e8; margin-bottom:1.75rem; flex-wrap:wrap; }
   .nav-brand { font-weight:700; color:#222; font-size:.95rem; letter-spacing:.02em; margin-right:.25rem; }
@@ -37,48 +41,373 @@
   <h1>Ranking B3 — outubro de 2026</h1>
   <p><em>Estratégia quantitativa de valor. Não é recomendação de investimento.</em></p>
 
+  <div class="calc-controls">
+    <strong>Calculadora de posi&ccedil;&atilde;o</strong> &nbsp;
+    Capital:&nbsp;R$&nbsp;<input id="rk-cap" type="number" value="10000" step="500" min="0" style="width:7em">
+    <span style="font-size:.8rem;color:#666">Informe o pre&ccedil;o atual de cada a&ccedil;&atilde;o para calcular n&iacute;veis e quantidades (peso igual entre todos os tickers do grupo).</span>
+  </div>
+
   <h2>Top geral — EV/EBIT + P/L</h2>
-  <table><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Mom12m</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Score</th></tr></thead><tbody>
-<tr><td>1</td><td><b>ALLD3</b></td><td>Comércio</td><td>3.15</td><td>1.36</td><td>-</td><td>58.8%</td><td>11M</td><td>4</td></tr>
-<tr><td>2</td><td><b>VTRU3</b></td><td>Diversos</td><td>3.35</td><td>1.61</td><td>-</td><td>61.4%</td><td>21M</td><td>7</td></tr>
-<tr><td>3</td><td><b>TEND3</b></td><td>Construção Civil</td><td>3.3</td><td>4.24</td><td>-</td><td>61.0%</td><td>140M</td><td>11</td></tr>
-<tr><td>4</td><td><b>JHSF3</b></td><td>Construção Civil</td><td>4.18</td><td>2.88</td><td>-</td><td>50.6%</td><td>62M</td><td>13</td></tr>
-<tr><td>5</td><td><b>USIM5</b></td><td>Siderurgia e Metalurgia</td><td>4.07</td><td>4.32</td><td>-</td><td>48.0%</td><td>90M</td><td>18</td></tr>
-<tr><td>6</td><td><b>POMO4</b></td><td>Material de Transporte</td><td>4.72</td><td>3.85</td><td>-</td><td>43.3%</td><td>90M</td><td>19</td></tr>
-<tr><td>7</td><td><b>EUCA4</b></td><td>Madeira e Papel</td><td>4.19</td><td>4.31</td><td>-</td><td>45.9%</td><td>2M</td><td>19</td></tr>
-<tr><td>8</td><td><b>VLID3</b></td><td>Serviços Diversos</td><td>3.53</td><td>4.86</td><td>-</td><td>44.1%</td><td>6M</td><td>19</td></tr>
-<tr><td>9</td><td><b>DIRR3</b></td><td>Construção Civil</td><td>4</td><td>4.9</td><td>-</td><td>54.0%</td><td>153M</td><td>21</td></tr>
-<tr><td>10</td><td><b>PFRM3</b></td><td>Comércio e Distribuição</td><td>4.04</td><td>5.39</td><td>-</td><td>50.8%</td><td>2M</td><td>25</td></tr>
-<tr><td>11</td><td><b>LREN3</b></td><td>Comércio</td><td>2.14</td><td>6.05</td><td>-</td><td>59.6%</td><td>321M</td><td>25</td></tr>
-<tr><td>12</td><td><b>PETR4</b></td><td>Petróleo, Gás e Biocombustíveis</td><td>4.23</td><td>5.09</td><td>-</td><td>30.4%</td><td>2.6B</td><td>28</td></tr>
-<tr><td>13</td><td><b>GMAT3</b></td><td>Comércio e Distribuição</td><td>4.84</td><td>4.96</td><td>-</td><td>58.2%</td><td>38M</td><td>32</td></tr>
-<tr><td>14</td><td><b>BEEF3</b></td><td>Alimentos Processados</td><td>4.46</td><td>5.56</td><td>-</td><td>53.6%</td><td>102M</td><td>33</td></tr>
-<tr><td>15</td><td><b>VULC3</b></td><td>Tecidos, Vestuário e Calçados</td><td>6.54</td><td>3.94</td><td>-</td><td>39.2%</td><td>43M</td><td>39</td></tr>
-<tr><td>16</td><td><b>LEVE3</b></td><td>Automóveis e Motocicletas</td><td>5.55</td><td>5.88</td><td>-</td><td>30.6%</td><td>13M</td><td>46</td></tr>
-<tr><td>17</td><td><b>CURY3</b></td><td>Construção Civil</td><td>4.75</td><td>7.26</td><td>-</td><td>47.5%</td><td>164M</td><td>46</td></tr>
-<tr><td>18</td><td><b>MELK3</b></td><td>Construção Civil</td><td>7.29</td><td>3.95</td><td>-</td><td>40.0%</td><td>2M</td><td>52</td></tr>
-<tr><td>19</td><td><b>VIVA3</b></td><td>Tecidos, Vestuário e Calçados</td><td>5.58</td><td>6.98</td><td>-</td><td>52.4%</td><td>91M</td><td>52</td></tr>
-<tr><td>20</td><td><b>SYNE3</b></td><td>Exploração de Imóveis</td><td>4.95</td><td>7.54</td><td>-</td><td>47.7%</td><td>2M</td><td>52</td></tr>
-</tbody></table>
+  <div style="overflow-x:auto"><table data-calc="geral"><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Mom12m</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Pre&ccedil;o</th><th>Qtd&nbsp;B1</th><th>Compra&nbsp;2</th><th>Qtd&nbsp;B2</th><th>Alvo&nbsp;1</th><th>Alvo&nbsp;2</th><th><span style='color:#c00'>Stop</span></th><th>Score</th></tr></thead><tbody>
+<tr data-vol="0.6141132490345745">
+        <td>1</td><td><b>VTRU3</b></td><td>Diversos</td>
+        <td>3.35</td><td>1.61</td><td>25.2%</td><td>61.4%</td><td>21M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>4</td>
+      </tr>
+<tr data-vol="0.609921408116097">
+        <td>2</td><td><b>TEND3</b></td><td>Construção Civil</td>
+        <td>3.3</td><td>4.24</td><td>1.7%</td><td>61.0%</td><td>140M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>6</td>
+      </tr>
+<tr data-vol="0.5062637925676168">
+        <td>3</td><td><b>JHSF3</b></td><td>Construção Civil</td>
+        <td>4.18</td><td>2.88</td><td>85.2%</td><td>50.6%</td><td>62M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>9</td>
+      </tr>
+<tr data-vol="0.47970221816472225">
+        <td>4</td><td><b>USIM5</b></td><td>Siderurgia e Metalurgia</td>
+        <td>4.07</td><td>4.32</td><td>56.2%</td><td>48.0%</td><td>90M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>12</td>
+      </tr>
+<tr data-vol="0.4594901159104088">
+        <td>5</td><td><b>EUCA4</b></td><td>Madeira e Papel</td>
+        <td>4.19</td><td>4.31</td><td>27.2%</td><td>45.9%</td><td>2M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>13</td>
+      </tr>
+<tr data-vol="0.44052703230477847">
+        <td>6</td><td><b>VLID3</b></td><td>Serviços Diversos</td>
+        <td>3.53</td><td>4.86</td><td>-19.4%</td><td>44.1%</td><td>6M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>14</td>
+      </tr>
+<tr data-vol="0.5081401839025045">
+        <td>7</td><td><b>PFRM3</b></td><td>Comércio e Distribuição</td>
+        <td>4.04</td><td>5.39</td><td>-1.3%</td><td>50.8%</td><td>2M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>18</td>
+      </tr>
+<tr data-vol="0.3042048320048904">
+        <td>8</td><td><b>PETR4</b></td><td>Petróleo, Gás e Biocombustíveis</td>
+        <td>4.23</td><td>5.09</td><td>50.5%</td><td>30.4%</td><td>2.6B</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>21</td>
+      </tr>
+<tr data-vol="0.5823823954847522">
+        <td>9</td><td><b>GMAT3</b></td><td>Comércio e Distribuição</td>
+        <td>4.84</td><td>4.96</td><td>-28.8%</td><td>58.2%</td><td>38M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>23</td>
+      </tr>
+<tr data-vol="0.4754843166033832">
+        <td>10</td><td><b>CURY3</b></td><td>Construção Civil</td>
+        <td>4.75</td><td>7.26</td><td>-13.8%</td><td>47.5%</td><td>164M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>35</td>
+      </tr>
+<tr data-vol="0.30557676111890547">
+        <td>11</td><td><b>LEVE3</b></td><td>Automóveis e Motocicletas</td>
+        <td>5.55</td><td>5.88</td><td>23.4%</td><td>30.6%</td><td>13M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>36</td>
+      </tr>
+<tr data-vol="0.5236105706604351">
+        <td>12</td><td><b>VIVA3</b></td><td>Tecidos, Vestuário e Calçados</td>
+        <td>5.58</td><td>6.98</td><td>-19.7%</td><td>52.4%</td><td>91M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>41</td>
+      </tr>
+<tr data-vol="0.4772063663677059">
+        <td>13</td><td><b>SYNE3</b></td><td>Exploração de Imóveis</td>
+        <td>4.95</td><td>7.54</td><td>-28.0%</td><td>47.7%</td><td>2M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>41</td>
+      </tr>
+<tr data-vol="0.40039668420376895">
+        <td>14</td><td><b>MELK3</b></td><td>Construção Civil</td>
+        <td>7.29</td><td>3.95</td><td>-24.1%</td><td>40.0%</td><td>2M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>42</td>
+      </tr>
+<tr data-vol="0.3674798842718896">
+        <td>15</td><td><b>CSUD3</b></td><td>Serviços Diversos</td>
+        <td>6.23</td><td>5.86</td><td>-20.7%</td><td>36.7%</td><td>1M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>42</td>
+      </tr>
+<tr data-vol="0.43360572409721865">
+        <td>16</td><td><b>MTRE3</b></td><td>Construção Civil</td>
+        <td>7.19</td><td>4.64</td><td>-12.2%</td><td>43.4%</td><td>4M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>44</td>
+      </tr>
+<tr data-vol="0.32490845279274516">
+        <td>17</td><td><b>VBBR3</b></td><td>Petróleo, Gás e Biocombustíveis</td>
+        <td>6.16</td><td>7.02</td><td>58.1%</td><td>32.5%</td><td>511M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>47</td>
+      </tr>
+<tr data-vol="0.3727568225510565">
+        <td>18</td><td><b>RECV3</b></td><td>Petróleo, Gás e Biocombustíveis</td>
+        <td>6.59</td><td>6.49</td><td>-17.5%</td><td>37.3%</td><td>27M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>50</td>
+      </tr>
+<tr data-vol="0.30458129538790785">
+        <td>19</td><td><b>ALUP11</b></td><td>Energia Elétrica</td>
+        <td>6.54</td><td>7.46</td><td>1.2%</td><td>30.5%</td><td>55M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>54</td>
+      </tr>
+<tr data-vol="0.5798679891890502">
+        <td>20</td><td><b>INTB3</b></td><td>Computadores e Equipamentos</td>
+        <td>6.77</td><td>7.27</td><td>17.0%</td><td>58.0%</td><td>27M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>55</td>
+      </tr>
+</tbody></table></div>
 
   <h2>Financeiras — P/VP + P/L</h2>
-  <table><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>P/VP</th><th>P/L</th><th>Mom12m</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Score</th></tr></thead><tbody>
-<tr><td>1</td><td><b>BRSR6</b></td><td>Intermediários Financeiros</td><td>0.44</td><td>3.3</td><td>-</td><td>40.3%</td><td>46M</td><td>2</td></tr>
-<tr><td>2</td><td><b>BMGB4</b></td><td>Intermediários Financeiros</td><td>0.77</td><td>5.3</td><td>-</td><td>38.9%</td><td>11M</td><td>6</td></tr>
-<tr><td>3</td><td><b>ABCB4</b></td><td>Intermediários Financeiros</td><td>0.82</td><td>5.85</td><td>-</td><td>34.2%</td><td>21M</td><td>8</td></tr>
-<tr><td>4</td><td><b>WIZC3</b></td><td>Previdência e Seguros</td><td>1.27</td><td>4.73</td><td>-</td><td>38.8%</td><td>7M</td><td>9</td></tr>
-<tr><td>5</td><td><b>BBDC4</b></td><td>Intermediários Financeiros</td><td>0.82</td><td>6.05</td><td>-</td><td>39.5%</td><td>1.2B</td><td>9</td></tr>
-</tbody></table>
+  <div style="overflow-x:auto"><table data-calc="fin"><thead><tr><th>#</th><th>Ticker</th><th>Setor</th><th>P/VP</th><th>P/L</th><th>Mom12m</th><th>Vol12m</th><th>Liq2m (R$)</th><th>Pre&ccedil;o</th><th>Qtd&nbsp;B1</th><th>Compra&nbsp;2</th><th>Qtd&nbsp;B2</th><th>Alvo&nbsp;1</th><th>Alvo&nbsp;2</th><th><span style='color:#c00'>Stop</span></th><th>Score</th></tr></thead><tbody>
+<tr data-vol="0.4031533441798631">
+        <td>1</td><td><b>BRSR6</b></td><td>Intermediários Financeiros</td>
+        <td>0.44</td><td>3.3</td><td>30.3%</td><td>40.3%</td><td>46M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>2</td>
+      </tr>
+<tr data-vol="0.38927868947062055">
+        <td>2</td><td><b>BMGB4</b></td><td>Intermediários Financeiros</td>
+        <td>0.77</td><td>5.3</td><td>50.5%</td><td>38.9%</td><td>11M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>5</td>
+      </tr>
+<tr data-vol="0.3419502529509675">
+        <td>3</td><td><b>ABCB4</b></td><td>Intermediários Financeiros</td>
+        <td>0.82</td><td>5.85</td><td>8.8%</td><td>34.2%</td><td>21M</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>7</td>
+      </tr>
+<tr data-vol="0.39508477773109224">
+        <td>4</td><td><b>BBDC4</b></td><td>Intermediários Financeiros</td>
+        <td>0.82</td><td>6.05</td><td>0.4%</td><td>39.5%</td><td>1.2B</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>8</td>
+      </tr>
+<tr data-vol="0.4718523856742021">
+        <td>5</td><td><b>BBAS3</b></td><td>Intermediários Financeiros</td>
+        <td>0.52</td><td>6.52</td><td>-0.3%</td><td>47.2%</td><td>1.2B</td>
+        <td><input class="rk-inp-price" type="number" step="0.01" placeholder="—" title="Informe o pre&ccedil;o atual" style="width:5.5em"></td>
+        <td class="rk-qty1">—</td>
+        <td class="rk-buy2">—</td>
+        <td class="rk-qty2">—</td>
+        <td class="rk-t1">—</td>
+        <td class="rk-t2">—</td>
+        <td class="rk-stop">—</td>
+        <td>8</td>
+      </tr>
+</tbody></table></div>
 
   
 <h2>Histórico (últimos 6 meses)</h2>
 <table>
   <thead><tr><th>Mês</th><th>Carteira</th></tr></thead>
   <tbody>
-    <tr><td>2026-10</td><td>ALLD3, VTRU3, TEND3, JHSF3, USIM5, POMO4, EUCA4, VLID3, DIRR3, PFRM3, LREN3, PETR4, GMAT3, BEEF3, VULC3, LEVE3, CURY3, MELK3, VIVA3, SYNE3</td></tr>
+    <tr><td>2026-10</td><td>VTRU3, TEND3, JHSF3, USIM5, EUCA4, VLID3, PFRM3, PETR4, GMAT3, CURY3, LEVE3, VIVA3, SYNE3, MELK3, CSUD3, MTRE3, VBBR3, RECV3, ALUP11, INTB3</td></tr>
   </tbody>
 </table>
 
-  <footer>Gerado em 31/10/2026, 00:18:09 · quant-b3 · Não é recomendação de investimento.</footer>
+  <script>
+(function(){
+  function fmt(v){
+    if(!v||isNaN(v)||v===0)return'—';
+    return'R '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function recalcTable(table,cap){
+    table.querySelectorAll('tbody tr').forEach(function(tr){
+      var price=parseFloat(tr.querySelector('.rk-inp-price').value);
+      var volRaw=parseFloat(tr.dataset.vol)||0;
+      if(!price||isNaN(price)||price<=0||volRaw<=0){
+        ['.rk-buy2','.rk-t1','.rk-t2','.rk-stop','.rk-qty1','.rk-qty2'].forEach(function(s){
+          var el=tr.querySelector(s);if(el)el.textContent='—';
+        });
+        return;
+      }
+      var vol=volRaw;
+      var sig30d=vol*0.29;var sig90d=vol*0.5;
+      var buy2=price*(1-0.5*sig30d);
+      var t1=price*(1+0.5*sig90d);
+      var t2=price*(1+sig90d);
+      var stop=price*(1-0.5*sig90d);
+      tr.querySelector('.rk-buy2').textContent=fmt(buy2);
+      tr.querySelector('.rk-t1').textContent=fmt(t1);
+      tr.querySelector('.rk-t2').textContent=fmt(t2);
+      tr.querySelector('.rk-stop').textContent=fmt(stop);
+      var n=table.querySelectorAll('tbody tr').length;
+      var alloc=n>0?cap/n:0;
+      var q1=alloc>0&&price>0?Math.floor(alloc/2/price):0;
+      var q2=alloc>0&&buy2>0?Math.floor(alloc/2/buy2):0;
+      tr.querySelector('.rk-qty1').textContent=q1>0?String(q1):'—';
+      tr.querySelector('.rk-qty2').textContent=q2>0?String(q2):'—';
+    });
+  }
+  function recalc(){
+    var cap=parseFloat(document.getElementById('rk-cap').value)||0;
+    document.querySelectorAll('table[data-calc]').forEach(function(t){recalcTable(t,cap);});
+  }
+  document.getElementById('rk-cap').addEventListener('input',recalc);
+  document.querySelectorAll('.rk-inp-price').forEach(function(el){el.addEventListener('input',recalc);});
+  recalc();
+})();
+</script>
+
+  <footer>Gerado em 31/10/2026, 00:45:08 · quant-b3 · Não é recomendação de investimento.</footer>
 </body>
 </html>

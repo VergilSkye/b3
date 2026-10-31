@@ -18,9 +18,11 @@ export interface ScanEntry {
   low52wPrice: number | null; // R$
   conversao: number | null; // P/EBIT / P/L (eficiência operacional → lucro)
   jurosAlerta: boolean; // conversao < 0,40 AND dívida líquida > 0
-  knifScore: number; // 0–5 pontos de risco
+  knifScore: number; // 0–7 pontos de risco
   score: number;
   janelas: number;
+  priceAtual: number | null; // fechamento mais recente (COTAHIST)
+  vol: number | null; // volatilidade anualizada (ex.: 0.60 = 60%)
 }
 
 export interface ScanResult {
@@ -79,6 +81,8 @@ function tableHtml(entries: ScanEntry[], window: string, refDate: string): strin
       <td>${e.evEbit.toFixed(2)}</td>
       <td>${e.pl.toFixed(2)}${jurosBadge(e)}</td>
       <td>${e.pvp !== null ? e.pvp.toFixed(2) : "—"}</td>
+      <td>${e.priceAtual !== null ? fmtBRL(e.priceAtual) : "—"}</td>
+      <td>${e.vol !== null ? `${(e.vol * 100).toFixed(0)}%` : "—"}</td>
       <td style="color:${e.retornoStock < 0 ? "#c00" : "#080"}">${pct(e.retornoStock)}</td>
       <td style="color:${e.retornoBova < 0 ? "#c00" : "#080"}">${pct(e.retornoBova)}</td>
       <td style="color:#c00;font-weight:bold">${pct(e.quedaRelativa)}</td>
@@ -94,7 +98,7 @@ function tableHtml(entries: ScanEntry[], window: string, refDate: string): strin
   <table>
     <thead><tr>
       <th>#</th><th>Ticker</th><th>Setor</th>
-      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
+      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th><th>Preço</th><th>σ</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
       <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
@@ -185,6 +189,82 @@ function consensoHtml(result: ScanResult): string {
       ? `<p class="note" style="margin-top:.5rem">Removidos por concentração de fator (&gt;2 por grupo): ${excluded.map((c) => c.ticker).join(", ")}</p>`
       : "";
 
+  // ── Calculadora de posição ──────────────────────────────────────────────────
+  const defaultWeight = limited.length > 0 ? Math.round(100 / limited.length) : 20;
+
+  const calcRows = limited
+    .map((c) => {
+      const e = c.entry;
+      const priceVal = e.priceAtual !== null ? e.priceAtual.toFixed(2) : "";
+      const volVal = e.vol !== null ? (e.vol * 100).toFixed(0) : "";
+      return `<tr>
+      <td><strong>${e.ticker}</strong>${near52wBadge(e)}${jurosBadge(e)}</td>
+      <td><input class="inp-price" type="number" step="0.01" value="${priceVal}" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="${volVal}" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="${defaultWeight}" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">\u2014</td>
+      <td class="calc-buy2">\u2014</td>
+      <td class="calc-qty2">\u2014</td>
+      <td class="calc-t1">\u2014</td>
+      <td class="calc-t2">\u2014</td>
+      <td class="calc-stop">\u2014</td>
+      <td>${knifScoreBadge(c.knifScoreMax)}</td>
+    </tr>`;
+    })
+    .join("\n");
+
+  const calcJs = `<script>
+(function(){
+  function fmt(v){
+    if(!v||isNaN(v)||v===0)return'\u2014';
+    return'R\u00a0'+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function recalc(){
+    var cap=parseFloat(document.getElementById('calc-cap').value)||0;
+    var periodo=parseInt(document.getElementById('calc-periodo').value)||90;
+    var d=new Date(Date.now()+periodo*86400000);
+    document.getElementById('calc-fim').textContent=d.toLocaleDateString('pt-BR');
+    var totalW=0;
+    document.querySelectorAll('#calc-table .inp-weight').forEach(function(el){totalW+=parseFloat(el.value)||0;});
+    var wEl=document.getElementById('calc-total-w');
+    if(wEl){wEl.textContent=totalW.toFixed(0)+'%';wEl.style.color=Math.abs(totalW-100)>1?'#c00':'#080';}
+    document.querySelectorAll('#calc-table tbody tr').forEach(function(tr){
+      var price=parseFloat(tr.querySelector('.inp-price').value);
+      var volPct=parseFloat(tr.querySelector('.inp-vol').value);
+      var weight=(parseFloat(tr.querySelector('.inp-weight').value)||0)/100;
+      if(!price||isNaN(price)||price<=0||!volPct||isNaN(volPct)){
+        ['.calc-buy2','.calc-t1','.calc-t2','.calc-stop','.calc-qty1','.calc-qty2'].forEach(function(s){
+          var el=tr.querySelector(s);if(el)el.textContent='\u2014';
+        });
+        return;
+      }
+      var vol=volPct/100;
+      var sig30d=vol*0.29;var sig90d=vol*0.5;
+      var buy2=price*(1-0.5*sig30d);
+      var t1=price*(1+0.5*sig90d);
+      var t2=price*(1+sig90d);
+      var stop=price*(1-0.5*sig90d);
+      tr.querySelector('.calc-buy2').textContent=fmt(buy2);
+      tr.querySelector('.calc-t1').textContent=fmt(t1);
+      tr.querySelector('.calc-t2').textContent=fmt(t2);
+      tr.querySelector('.calc-stop').textContent=fmt(stop);
+      var alloc=cap*weight;
+      var q1=alloc>0&&price>0?Math.floor(alloc/2/price):0;
+      var q2=alloc>0&&buy2>0?Math.floor(alloc/2/buy2):0;
+      tr.querySelector('.calc-qty1').textContent=q1>0?String(q1):'\u2014';
+      tr.querySelector('.calc-qty2').textContent=q2>0?String(q2):'\u2014';
+    });
+  }
+  function listen(sel){document.querySelectorAll(sel).forEach(function(el){el.addEventListener('input',recalc);});}
+  document.getElementById('calc-cap').addEventListener('input',recalc);
+  document.getElementById('calc-periodo').addEventListener('input',recalc);
+  listen('#calc-table .inp-price');
+  listen('#calc-table .inp-vol');
+  listen('#calc-table .inp-weight');
+  recalc();
+})();
+<\/script>`;
+
   return `
   <h2>Consenso (2+ janelas)</h2>
   <p>Ações que aparecem em 2 ou 3 das 3 janelas — sinal mais robusto de underperformance relativa persistente.</p>
@@ -195,7 +275,36 @@ function consensoHtml(result: ScanResult): string {
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
-  ${excludedNote}`;
+  ${excludedNote}
+
+  <h2>Calculadora de posição — consenso</h2>
+  <p class="note">
+    Preço e σ pré-preenchidos com dados do COTAHIST (editáveis para ajuste).<br>
+    <strong>Fórmulas (σ&nbsp;anual):</strong>
+    B2&nbsp;=&nbsp;P&times;(1&minus;0,145σ) &nbsp;&middot;&nbsp;
+    A1&nbsp;=&nbsp;P&times;(1&plus;0,25σ) &nbsp;&middot;&nbsp;
+    A2&nbsp;=&nbsp;P&times;(1&plus;0,5σ) &nbsp;&middot;&nbsp;
+    Stop&nbsp;=&nbsp;P&times;(1&minus;0,25σ).<br>
+    Capital dividido em 2 etapas: 50% na Compra 1 (preço atual) e 50% na Compra 2 (se cair).
+    Use fracionário (ticker&nbsp;+&nbsp;F) com ordem limitada.
+  </p>
+  <div class="calc-controls">
+    Capital:&nbsp;R$&nbsp;<input id="calc-cap" type="number" value="3500" step="500" min="0" style="width:6em">
+    &nbsp;&nbsp;Per&iacute;odo:&nbsp;<input id="calc-periodo" type="number" value="90" step="10" min="1" max="365" style="width:4em">&nbsp;dias
+    &nbsp;&nbsp;Fim:&nbsp;<strong id="calc-fim"></strong>
+    &nbsp;&nbsp;Peso&nbsp;&Sigma;:&nbsp;<strong id="calc-total-w"></strong>
+  </div>
+  <div style="overflow-x:auto">
+  <table id="calc-table">
+    <thead><tr>
+      <th>Ticker</th><th>Pre&ccedil;o</th><th>&#963;</th><th>Peso&nbsp;%</th>
+      <th>Qtd&nbsp;B1</th><th>Compra&nbsp;2</th><th>Qtd&nbsp;B2</th>
+      <th>Alvo&nbsp;1</th><th>Alvo&nbsp;2</th><th style="color:#c00">Stop</th><th>Risco</th>
+    </tr></thead>
+    <tbody>${calcRows}</tbody>
+  </table>
+  </div>
+  ${calcJs}`;
 }
 
 function corporateEventsHtml(
@@ -262,6 +371,10 @@ export function gravarScanHtml(result: ScanResult, outPath: string): void {
     .badge-orange { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
     .badge-green  { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
     .badge-gray   { background: #f5f5f5; color: #666; border: 1px solid #ddd; }
+    .calc-controls { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin: .75rem 0 1rem; font-size: .9rem; }
+    .calc-controls input[type=number] { border: 1px solid #bbb; border-radius: 3px; padding: .2rem .35rem; font-size: .875rem; }
+    #calc-table input[type=number] { border: 1px solid #bbb; border-radius: 3px; padding: .15rem .3rem; font-size: .8rem; }
+    .calc-stop { color: #c00; font-weight: bold; }
   </style>
 </head>
 <body>

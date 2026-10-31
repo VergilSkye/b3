@@ -104,6 +104,7 @@ function rankWindow(
   priceRef: Map<string, number>,
   low52w: Map<string, number>,
   low52wDate: Map<string, string>,
+  volMap: Map<string, number>,
 ): Omit<ScanEntry, "janelas">[] {
   const bovaToday = priceToday.get("BOVA11");
   const bovaRef = priceRef.get("BOVA11");
@@ -155,6 +156,8 @@ function rankWindow(
       jurosAlerta: knif.jurosAlerta,
       knifScore: knif.score,
       score: 0,
+      priceAtual: p1 ?? null,
+      vol: volMap.get(c.ticker) ?? null,
     });
   }
 
@@ -224,7 +227,7 @@ async function main() {
 
   // 2. Carregar price maps + mom12m (pass único do COTAHIST)
   console.log("Carregando price maps (pass único do COTAHIST)...");
-  const { priceToday, price30d, price60d, price90d, low52w, low52wDate, mom12mMap } =
+  const { priceToday, price30d, price60d, price90d, low52w, low52wDate, mom12mMap, volMap } =
     await buildScanPriceMaps(dateToday, date30d, date60d, date90d, CACHE_DIR);
   console.log(
     `  tickers: hoje=${priceToday.size}  -30d=${price30d.size}  -60d=${price60d.size}  -90d=${price90d.size}  low52w=${low52w.size}\n`,
@@ -308,9 +311,33 @@ async function main() {
 
   // 8. Rankear por janela (knife score reutilizado de knifMap)
   console.log("Rankeando candidatos...");
-  const raw30d = rankWindow(cleanCandidates, knifMap, priceToday, price30d, low52w, low52wDate);
-  const raw60d = rankWindow(cleanCandidates, knifMap, priceToday, price60d, low52w, low52wDate);
-  const raw90d = rankWindow(cleanCandidates, knifMap, priceToday, price90d, low52w, low52wDate);
+  const raw30d = rankWindow(
+    cleanCandidates,
+    knifMap,
+    priceToday,
+    price30d,
+    low52w,
+    low52wDate,
+    volMap,
+  );
+  const raw60d = rankWindow(
+    cleanCandidates,
+    knifMap,
+    priceToday,
+    price60d,
+    low52w,
+    low52wDate,
+    volMap,
+  );
+  const raw90d = rankWindow(
+    cleanCandidates,
+    knifMap,
+    priceToday,
+    price90d,
+    low52w,
+    low52wDate,
+    volMap,
+  );
 
   const { top30d, top60d, top90d } = attachJanelas(raw30d, raw60d, raw90d);
 

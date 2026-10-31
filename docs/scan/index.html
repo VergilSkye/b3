@@ -33,39 +33,46 @@
     .badge-orange { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
     .badge-green  { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
     .badge-gray   { background: #f5f5f5; color: #666; border: 1px solid #ddd; }
+    .calc-controls { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin: .75rem 0 1rem; font-size: .9rem; }
+    .calc-controls input[type=number] { border: 1px solid #bbb; border-radius: 3px; padding: .2rem .35rem; font-size: .875rem; }
+    #calc-table input[type=number] { border: 1px solid #bbb; border-radius: 3px; padding: .15rem .3rem; font-size: .8rem; }
+    .calc-stop { color: #c00; font-weight: bold; }
   </style>
 </head>
 <body>
   <nav class="site-nav">
   <span class="nav-brand">quant-b3</span>
   <div class="nav-links">
-    <a href="../" class="nav-pill nav-pill-link">Ranking<span class="nav-date">30/10/2026</span></a>
+    <a href="../" class="nav-pill nav-pill-link">Ranking<span class="nav-date">31/10/2026</span></a>
     <a href="../backtest/" class="nav-pill nav-pill-link">Backtest<span class="nav-date">30/10/2026</span></a>
     <span class="nav-pill nav-pill-active">Scan CB</span>
   </div>
 </nav>
   <h1>Scan pós circuit-breaker — candidatos à recuperação</h1>
   <p>
-    Data de referência: <strong>2026-10-30</strong> &nbsp;·&nbsp;
-    Janelas: 30 d (2026-09-30), 60 d (2026-08-31), 90 d (2026-08-01)
+    Data de referência: <strong>2026-10-31</strong> &nbsp;·&nbsp;
+    Janelas: 30 d (2026-10-01), 60 d (2026-09-01), 90 d (2026-08-02)
     &nbsp;<a href="../index.html">← Ranking atual</a>
   </p>
   <div class="note">
     <strong>Metodologia:</strong> score = rank(queda relativa ↑) + rank(EV/EBIT ↑).
     Filtragem: liquidez ≥ R$1M · EV/EBIT &gt; 0 · P/L &gt; 0 · financeiras excluídas · 1 ticker por empresa · ↑ Mín52s &gt; 200% excluídos (evento corporativo).<br>
-    <strong>Risco</strong> = knife score 0–5 por ticker (calculado uma única vez, independente da janela):
-    (a) momentum 12m no decil inferior;
-    (b) ≤ 5% acima mín 52s;
-    (c) <strong>juros↑</strong>: P/EBIT÷P/L &lt; 0,40 <em>e</em> dívida líquida &gt; 0 (juros consomem o lucro operacional);
-    (d) lucro não-recorrente: D.Y. &gt; 20% ou P/L &gt; 50.
-    Escala: <span class="badge badge-green">&#128994;</span> 0–1 &nbsp;·&nbsp; <span class="badge badge-orange">&#128993;</span> 2–3 &nbsp;·&nbsp; <span class="badge badge-red">&#128308;</span> 4–5.<br>
+    <strong>Risco</strong> = knife score 0–7 por ticker (calculado uma única vez, independente da janela):
+    (a) momentum 12-1m no decil inferior;
+    (b) ≤ 5% acima da mínima de 52s;
+    (c) <strong>juros↑</strong>: P/EBIT÷P/L &lt; 0,40 <em>e</em> Dív.Líq/Patrim &gt; 0,5 (não marca se P/L &gt; 50);
+    (d) lucro não-recorrente: D.Y. &gt; 20% ou P/L &gt; 50;
+    (e) lucro trimestral negativo ou &lt; mesmo trimestre do ano anterior (ITR CVM);
+    (f) dívida líquida subiu &gt; 20% no último trimestre (ITR CVM);
+    (g) último ITR recebido há &gt; 120 dias.
+    Escala: <span class="badge badge-green">&#128994;</span> 0–1 &nbsp;·&nbsp; <span class="badge badge-orange">&#128993;</span> 2–3 &nbsp;·&nbsp; <span class="badge badge-red">&#128308;</span> 4+.<br>
     Consenso limitado a 2 tickers por fator de risco (Imobiliário, Varejo, etc.).
   </div>
 
   
   <h2>Consenso (2+ janelas)</h2>
   <p>Ações que aparecem em 2 ou 3 das 3 janelas — sinal mais robusto de underperformance relativa persistente.</p>
-  <p class="sector-summary">Distribuição por fator de risco: <strong>Imobiliário</strong>: 20% &nbsp;·&nbsp; <strong>Varejo</strong>: 20% &nbsp;·&nbsp; <strong>Diversos</strong>: 20% &nbsp;·&nbsp; <strong>Alimentos</strong>: 10% &nbsp;·&nbsp; <strong>Energia/Commodities</strong>: 10% &nbsp;·&nbsp; <strong>Serv.Méd.Hospit. Análises e Diagnósticos</strong>: 10% &nbsp;·&nbsp; <strong>Serviços Diversos</strong>: 10%</p>
+  <p class="sector-summary">Distribuição por fator de risco: <strong>Imobiliário</strong>: 15% &nbsp;·&nbsp; <strong>Varejo</strong>: 15% &nbsp;·&nbsp; <strong>Educação</strong>: 15% &nbsp;·&nbsp; <strong>Locação</strong>: 15% &nbsp;·&nbsp; <strong>Alimentos</strong>: 8% &nbsp;·&nbsp; <strong>Energia/Commodities</strong>: 8% &nbsp;·&nbsp; <strong>Serviços Diversos</strong>: 8% &nbsp;·&nbsp; <strong>Saúde</strong>: 8% &nbsp;·&nbsp; <strong>Diversos</strong>: 8%</p>
   <table>
     <thead><tr>
       <th>Ticker</th><th>Setor</th><th>Fator</th><th>EV/EBIT</th><th>P/L</th><th>Janelas</th><th>↑ Mín52s</th><th>Risco</th>
@@ -75,10 +82,10 @@
       <td>Construção Civil</td>
       <td>Imobiliário</td>
       <td>1.35</td>
-      <td>2.99 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.38) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>2.99</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>MDNE3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -113,12 +120,12 @@
 <tr>
       <td><strong>COGN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
-      <td>Diversos</td>
+      <td>Educação</td>
       <td>3.83</td>
-      <td>4.65 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.32) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>4.65</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -141,19 +148,9 @@
       <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
-      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
-      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
-      <td>1.97</td>
-      <td>14.37 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.04) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>+0.8%</td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
-    </tr>
-<tr>
       <td><strong>VAMO3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
-      <td>Diversos</td>
+      <td>Locação</td>
       <td>5.25</td>
       <td>6.99 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.15) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td><span class="badge badge-orange">2/3</span></td>
@@ -169,9 +166,296 @@
       <td><span class="badge badge-orange">2/3</span></td>
       <td>+0.0%</td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td><strong>VTRU3</strong> <span class="badge badge-orange">~Mín52s</span></td>
+      <td>Diversos</td>
+      <td>Educação</td>
+      <td>3.35</td>
+      <td>1.61</td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td>+5.8%</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr>
+<tr>
+      <td><strong>MOVI3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Diversos</td>
+      <td>Locação</td>
+      <td>5.47</td>
+      <td>4.63 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
+      <td>Saúde</td>
+      <td>1.97</td>
+      <td>14.37 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.04) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td>+0.8%</td>
+      <td><span class="badge badge-orange">&#128993; 3</span></td>
+    </tr>
+<tr>
+      <td><strong>SEER3</strong></td>
+      <td>Diversos</td>
+      <td>Diversos</td>
+      <td>3.42</td>
+      <td>5.07</td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td>+27.4%</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr></tbody>
   </table>
-  <p class="note" style="margin-top:.5rem">Removidos por concentração de fator (&gt;2 por grupo): TEND3, PGMN3, SBFG3, JHSF3, DIRR3, HBRE3, SYNE3, MOVI3, VTRU3, GMAT3</p>
+  <p class="note" style="margin-top:.5rem">Removidos por concentração de fator (&gt;2 por grupo): TEND3, PGMN3, SBFG3, JHSF3, DIRR3, SYNE3, HBRE3, GMAT3</p>
+
+  <h2>Calculadora de posição — consenso</h2>
+  <p class="note">
+    Preço e σ pré-preenchidos com dados do COTAHIST (editáveis para ajuste).<br>
+    <strong>Fórmulas (σ&nbsp;anual):</strong>
+    B2&nbsp;=&nbsp;P&times;(1&minus;0,145σ) &nbsp;&middot;&nbsp;
+    A1&nbsp;=&nbsp;P&times;(1&plus;0,25σ) &nbsp;&middot;&nbsp;
+    A2&nbsp;=&nbsp;P&times;(1&plus;0,5σ) &nbsp;&middot;&nbsp;
+    Stop&nbsp;=&nbsp;P&times;(1&minus;0,25σ).<br>
+    Capital dividido em 2 etapas: 50% na Compra 1 (preço atual) e 50% na Compra 2 (se cair).
+    Use fracionário (ticker&nbsp;+&nbsp;F) com ordem limitada.
+  </p>
+  <div class="calc-controls">
+    Capital:&nbsp;R$&nbsp;<input id="calc-cap" type="number" value="3500" step="500" min="0" style="width:6em">
+    &nbsp;&nbsp;Per&iacute;odo:&nbsp;<input id="calc-periodo" type="number" value="90" step="10" min="1" max="365" style="width:4em">&nbsp;dias
+    &nbsp;&nbsp;Fim:&nbsp;<strong id="calc-fim"></strong>
+    &nbsp;&nbsp;Peso&nbsp;&Sigma;:&nbsp;<strong id="calc-total-w"></strong>
+  </div>
+  <div style="overflow-x:auto">
+  <table id="calc-table">
+    <thead><tr>
+      <th>Ticker</th><th>Pre&ccedil;o</th><th>&#963;</th><th>Peso&nbsp;%</th>
+      <th>Qtd&nbsp;B1</th><th>Compra&nbsp;2</th><th>Qtd&nbsp;B2</th>
+      <th>Alvo&nbsp;1</th><th>Alvo&nbsp;2</th><th style="color:#c00">Stop</th><th>Risco</th>
+    </tr></thead>
+    <tbody><tr>
+      <td><strong>PLPL3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="4.51" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="74" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td><strong>MDNE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="15.53" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="71" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="9.38" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="60" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td><strong>CEAB3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="6.64" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="87" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td><strong>COGN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="1.61" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="70" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span> <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="2.69" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="54" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-orange">&#128993; 3</span></td>
+    </tr>
+<tr>
+      <td><strong>USIM5</strong> <span class="badge badge-orange">~Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="5.47" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="48" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr>
+<tr>
+      <td><strong>VAMO3</strong> <span class="badge badge-red">Mín52s</span> <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.15) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="2.46" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="105" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td><strong>VLID3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="14.20" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="44" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td><strong>VTRU3</strong> <span class="badge badge-orange">~Mín52s</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="11.62" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="61" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr>
+<tr>
+      <td><strong>MOVI3</strong> <span class="badge badge-red">Mín52s</span> <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="5.87" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="115" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span> <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.04) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td><input class="inp-price" type="number" step="0.01" value="1.30" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="81" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-orange">&#128993; 3</span></td>
+    </tr>
+<tr>
+      <td><strong>SEER3</strong></td>
+      <td><input class="inp-price" type="number" step="0.01" value="10.92" style="width:5.5em"></td>
+      <td><input class="inp-vol" type="number" step="1" value="72" min="1" max="300" style="width:3.5em">%</td>
+      <td><input class="inp-weight" type="number" step="5" value="8" min="0" max="100" style="width:3.5em">%</td>
+      <td class="calc-qty1">—</td>
+      <td class="calc-buy2">—</td>
+      <td class="calc-qty2">—</td>
+      <td class="calc-t1">—</td>
+      <td class="calc-t2">—</td>
+      <td class="calc-stop">—</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr></tbody>
+  </table>
+  </div>
+  <script>
+(function(){
+  function fmt(v){
+    if(!v||isNaN(v)||v===0)return'—';
+    return'R '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function recalc(){
+    var cap=parseFloat(document.getElementById('calc-cap').value)||0;
+    var periodo=parseInt(document.getElementById('calc-periodo').value)||90;
+    var d=new Date(Date.now()+periodo*86400000);
+    document.getElementById('calc-fim').textContent=d.toLocaleDateString('pt-BR');
+    var totalW=0;
+    document.querySelectorAll('#calc-table .inp-weight').forEach(function(el){totalW+=parseFloat(el.value)||0;});
+    var wEl=document.getElementById('calc-total-w');
+    if(wEl){wEl.textContent=totalW.toFixed(0)+'%';wEl.style.color=Math.abs(totalW-100)>1?'#c00':'#080';}
+    document.querySelectorAll('#calc-table tbody tr').forEach(function(tr){
+      var price=parseFloat(tr.querySelector('.inp-price').value);
+      var volPct=parseFloat(tr.querySelector('.inp-vol').value);
+      var weight=(parseFloat(tr.querySelector('.inp-weight').value)||0)/100;
+      if(!price||isNaN(price)||price<=0||!volPct||isNaN(volPct)){
+        ['.calc-buy2','.calc-t1','.calc-t2','.calc-stop','.calc-qty1','.calc-qty2'].forEach(function(s){
+          var el=tr.querySelector(s);if(el)el.textContent='—';
+        });
+        return;
+      }
+      var vol=volPct/100;
+      var sig30d=vol*0.29;var sig90d=vol*0.5;
+      var buy2=price*(1-0.5*sig30d);
+      var t1=price*(1+0.5*sig90d);
+      var t2=price*(1+sig90d);
+      var stop=price*(1-0.5*sig90d);
+      tr.querySelector('.calc-buy2').textContent=fmt(buy2);
+      tr.querySelector('.calc-t1').textContent=fmt(t1);
+      tr.querySelector('.calc-t2').textContent=fmt(t2);
+      tr.querySelector('.calc-stop').textContent=fmt(stop);
+      var alloc=cap*weight;
+      var q1=alloc>0&&price>0?Math.floor(alloc/2/price):0;
+      var q2=alloc>0&&buy2>0?Math.floor(alloc/2/buy2):0;
+      tr.querySelector('.calc-qty1').textContent=q1>0?String(q1):'—';
+      tr.querySelector('.calc-qty2').textContent=q2>0?String(q2):'—';
+    });
+  }
+  function listen(sel){document.querySelectorAll(sel).forEach(function(el){el.addEventListener('input',recalc);});}
+  document.getElementById('calc-cap').addEventListener('input',recalc);
+  document.getElementById('calc-periodo').addEventListener('input',recalc);
+  listen('#calc-table .inp-price');
+  listen('#calc-table .inp-vol');
+  listen('#calc-table .inp-weight');
+  recalc();
+})();
+</script>
   
   <h2>&#9888;&#65039; Dados suspeitos — possível evento corporativo</h2>
   <p class="note">Tickers com ↑ Mín52s &gt; 200%: preço atual muito acima da mínima de 52 semanas. Pode indicar grupamento ou desdobramento não ajustado no COTAHIST. <strong>Excluídos do ranking.</strong></p>
@@ -184,41 +468,45 @@
     </tr></tbody>
   </table>
   
-  <h2>Janela 30 dias (desde 2026-09-30)</h2>
+  <h2>Janela 30 dias (desde 2026-10-01)</h2>
   <table>
     <thead><tr>
       <th>#</th><th>Ticker</th><th>Setor</th>
-      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
+      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th><th>Preço</th><th>σ</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
       <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
     <tbody><tr>
       <td>1</td>
-      <td><strong>MDNE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><strong>PLPL3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Construção Civil</td>
-      <td>3.07</td>
-      <td>2.97</td>
-      <td>0.72</td>
-      <td style="color:#c00">-39.71%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-30.17%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 15,53</small></td>
+      <td>1.35</td>
+      <td>2.99</td>
+      <td>0.82</td>
+      <td>R$ 4,51</td>
+      <td>74%</td>
+      <td style="color:#c00">-34.26%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-24.55%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,51</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>2</td>
-      <td><strong>PLPL3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><strong>MDNE3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Construção Civil</td>
-      <td>1.35</td>
-      <td>2.99 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.38) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.82</td>
-      <td style="color:#c00">-32.69%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-23.14%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,51</small></td>
+      <td>3.07</td>
+      <td>2.97</td>
+      <td>0.72</td>
+      <td>R$ 15,53</td>
+      <td>71%</td>
+      <td style="color:#c00">-37.73%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-28.02%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 15,53</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>3</td>
@@ -227,9 +515,11 @@
       <td>2.25</td>
       <td>3.59</td>
       <td>0.53</td>
-      <td style="color:#c00">-33.80%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-24.25%</td>
+      <td>R$ 6,64</td>
+      <td>87%</td>
+      <td style="color:#c00">-33.13%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-23.43%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 6,64</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-orange">&#128993; 2</span></td>
@@ -241,9 +531,11 @@
       <td>3.38</td>
       <td>11.06 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.14) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td>1.68</td>
-      <td style="color:#c00">-28.55%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-19.00%</td>
+      <td>R$ 7,81</td>
+      <td>76%</td>
+      <td style="color:#c00">-30.02%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-20.31%</td>
       <td>+10.9%<br><small style="color:#999">09/01/2026 R$ 7,04</small></td>
       <td><span class="badge badge-gray">1/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
@@ -253,14 +545,16 @@
       <td><strong>COGN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
       <td>3.83</td>
-      <td>4.65 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.32) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>4.65</td>
       <td>0.24</td>
-      <td style="color:#c00">-30.60%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-21.06%</td>
+      <td>R$ 1,61</td>
+      <td>70%</td>
+      <td style="color:#c00">-31.49%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-21.78%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,61</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>6</td>
@@ -269,166 +563,190 @@
       <td>5.25</td>
       <td>6.99 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.15) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td>0.84</td>
-      <td style="color:#c00">-42.79%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-33.25%</td>
+      <td>R$ 2,46</td>
+      <td>105%</td>
+      <td style="color:#c00">-45.33%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-35.63%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,46</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>7</td>
-      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
-      <td>1.97</td>
-      <td>14.37 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.04) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.28</td>
-      <td style="color:#c00">-21.69%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-12.14%</td>
-      <td>+0.8%<br><small style="color:#999">28/10/2026 R$ 1,29</small></td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
-    </tr>
-<tr>
-      <td>8</td>
       <td><strong>TEND3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Construção Civil</td>
       <td>3.30</td>
       <td>4.24</td>
       <td>1.59</td>
-      <td style="color:#c00">-24.69%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-15.15%</td>
+      <td>R$ 20,34</td>
+      <td>61%</td>
+      <td style="color:#c00">-25.74%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-16.03%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 20,34</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
-      <td>9</td>
+      <td>8</td>
       <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio e Distribuição</td>
       <td>3.46</td>
-      <td>5.47 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.35) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>5.47</td>
       <td>0.53</td>
-      <td style="color:#c00">-25.80%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-16.25%</td>
+      <td>R$ 2,56</td>
+      <td>86%</td>
+      <td style="color:#c00">-26.22%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-16.52%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,56</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
-      <td>10</td>
-      <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Alimentos Processados</td>
-      <td>4.46</td>
-      <td>5.56 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>1.62</td>
-      <td style="color:#c00">-31.73%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-22.18%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,69</small></td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
-    </tr>
-<tr>
-      <td>11</td>
-      <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Exploração de Imóveis</td>
-      <td>4.73</td>
-      <td>4.98 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.10) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.10</td>
-      <td style="color:#c00">-32.71%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-23.17%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,81</small></td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td><span class="badge badge-red">&#128308; 4</span></td>
-    </tr>
-<tr>
-      <td>12</td>
-      <td><strong>MOVI3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Diversos</td>
-      <td>5.47</td>
-      <td>4.63 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.57</td>
-      <td style="color:#c00">-41.30%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-31.76%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 5,87</small></td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
-    </tr>
-<tr>
-      <td>13</td>
+      <td>9</td>
       <td><strong>VTRU3</strong> <span class="badge badge-orange">~Mín52s</span></td>
       <td>Diversos</td>
       <td>3.35</td>
       <td>1.61</td>
       <td>0.44</td>
-      <td style="color:#c00">-22.89%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-13.35%</td>
+      <td>R$ 11,62</td>
+      <td>61%</td>
+      <td style="color:#c00">-23.80%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-14.10%</td>
       <td>+5.8%<br><small style="color:#999">24/10/2025 R$ 10,98</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
-      <td>14</td>
+      <td>10</td>
+      <td><strong>MOVI3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Diversos</td>
+      <td>5.47</td>
+      <td>4.63 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>0.57</td>
+      <td>R$ 5,87</td>
+      <td>115%</td>
+      <td style="color:#c00">-41.88%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-32.17%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 5,87</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>11</td>
+      <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Alimentos Processados</td>
+      <td>4.46</td>
+      <td>5.56 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>1.62</td>
+      <td>R$ 2,69</td>
+      <td>54%</td>
+      <td style="color:#c00">-31.03%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-21.32%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,69</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 3</span></td>
+    </tr>
+<tr>
+      <td>12</td>
+      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
+      <td>1.97</td>
+      <td>14.37 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.04) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>0.28</td>
+      <td>R$ 1,30</td>
+      <td>81%</td>
+      <td style="color:#c00">-20.73%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-11.03%</td>
+      <td>+0.8%<br><small style="color:#999">28/10/2026 R$ 1,29</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 3</span></td>
+    </tr>
+<tr>
+      <td>13</td>
       <td><strong>SBFG3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>5.55</td>
       <td>2.63</td>
       <td>0.34</td>
-      <td style="color:#c00">-39.53%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-29.99%</td>
+      <td>R$ 4,94</td>
+      <td>89%</td>
+      <td style="color:#c00">-39.31%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-29.61%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,94</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
+      <td>14</td>
+      <td><strong>SEER3</strong></td>
+      <td>Diversos</td>
+      <td>3.42</td>
+      <td>5.07</td>
+      <td>0.90</td>
+      <td>R$ 10,92</td>
+      <td>72%</td>
+      <td style="color:#c00">-23.53%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-13.82%</td>
+      <td>+27.4%<br><small style="color:#999">17/11/2025 R$ 8,57</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr>
+<tr>
       <td>15</td>
-      <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td><strong>MGLU3</strong></td>
       <td>Comércio</td>
-      <td>2.14</td>
-      <td>6.05</td>
-      <td>0.87</td>
-      <td style="color:#c00">-19.14%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-9.59%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 9,38</small></td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-green">&#128994; 1</span></td>
+      <td>4.95</td>
+      <td>46.90</td>
+      <td>0.37</td>
+      <td>R$ 5,13</td>
+      <td>112%</td>
+      <td style="color:#c00">-32.23%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-22.53%</td>
+      <td>+32.2%<br><small style="color:#999">20/08/2026 R$ 3,88</small></td>
+      <td><span class="badge badge-gray">1/3</span></td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
       <td>16</td>
+      <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Exploração de Imóveis</td>
+      <td>4.73</td>
+      <td>4.98 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.10) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>0.10</td>
+      <td>R$ 1,81</td>
+      <td>74%</td>
+      <td style="color:#c00">-30.92%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-21.21%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,81</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-red">&#128308; 4</span></td>
+    </tr>
+<tr>
+      <td>17</td>
       <td><strong>JHSF3</strong></td>
       <td>Construção Civil</td>
       <td>4.18</td>
       <td>2.88</td>
       <td>0.82</td>
+      <td>R$ 8,70</td>
+      <td>51%</td>
       <td style="color:#c00">-25.83%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-16.29%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-16.12%</td>
       <td>+40.1%<br><small style="color:#999">24/10/2025 R$ 6,21</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-green">&#128994; 0</span></td>
-    </tr>
-<tr>
-      <td>17</td>
-      <td><strong>MGLU3</strong></td>
-      <td>Comércio</td>
-      <td>4.95</td>
-      <td>46.90 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.06) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.37</td>
-      <td style="color:#c00">-31.23%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-21.69%</td>
-      <td>+32.2%<br><small style="color:#999">20/08/2026 R$ 3,88</small></td>
-      <td><span class="badge badge-gray">1/3</span></td>
-      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>18</td>
@@ -437,26 +755,30 @@
       <td>4.84</td>
       <td>4.96</td>
       <td>0.72</td>
-      <td style="color:#c00">-30.12%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-20.57%</td>
+      <td>R$ 3,55</td>
+      <td>58%</td>
+      <td style="color:#c00">-29.56%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-19.86%</td>
       <td>+0.0%<br><small style="color:#999">28/10/2026 R$ 3,55</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>19</td>
-      <td><strong>SEER3</strong></td>
-      <td>Diversos</td>
-      <td>3.42</td>
-      <td>5.07</td>
-      <td>0.90</td>
-      <td style="color:#c00">-20.06%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-10.51%</td>
-      <td>+27.4%<br><small style="color:#999">17/11/2025 R$ 8,57</small></td>
-      <td><span class="badge badge-gray">1/3</span></td>
-      <td><span class="badge badge-green">&#128994; 0</span></td>
+      <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Comércio</td>
+      <td>2.14</td>
+      <td>6.05</td>
+      <td>0.87</td>
+      <td>R$ 9,38</td>
+      <td>60%</td>
+      <td style="color:#c00">-17.79%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-8.08%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 9,38</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>20</td>
@@ -465,20 +787,22 @@
       <td>4.07</td>
       <td>4.32</td>
       <td>0.30</td>
-      <td style="color:#c00">-21.97%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-12.42%</td>
+      <td>R$ 5,47</td>
+      <td>48%</td>
+      <td style="color:#c00">-22.85%</td>
+      <td style="color:#c00">-9.71%</td>
+      <td style="color:#c00;font-weight:bold">-13.14%</td>
       <td>+10.7%<br><small style="color:#999">24/10/2025 R$ 4,94</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr></tbody>
   </table>
   
-  <h2>Janela 60 dias (desde 2026-08-31)</h2>
+  <h2>Janela 60 dias (desde 2026-09-01)</h2>
   <table>
     <thead><tr>
       <th>#</th><th>Ticker</th><th>Setor</th>
-      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
+      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th><th>Preço</th><th>σ</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
       <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
@@ -487,14 +811,16 @@
       <td><strong>PLPL3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Construção Civil</td>
       <td>1.35</td>
-      <td>2.99 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.38) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>2.99</td>
       <td>0.82</td>
-      <td style="color:#c00">-36.92%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-32.19%</td>
+      <td>R$ 4,51</td>
+      <td>74%</td>
+      <td style="color:#c00">-37.71%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-31.73%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,51</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>2</td>
@@ -503,9 +829,11 @@
       <td>3.07</td>
       <td>2.97</td>
       <td>0.72</td>
-      <td style="color:#c00">-36.48%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-31.75%</td>
+      <td>R$ 15,53</td>
+      <td>71%</td>
+      <td style="color:#c00">-38.18%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-32.20%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 15,53</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-orange">&#128993; 2</span></td>
@@ -517,9 +845,11 @@
       <td>3.30</td>
       <td>4.24</td>
       <td>1.59</td>
+      <td>R$ 20,34</td>
+      <td>61%</td>
       <td style="color:#c00">-38.55%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-33.82%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-32.57%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 20,34</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
@@ -529,98 +859,112 @@
       <td><strong>COGN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
       <td>3.83</td>
-      <td>4.65 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.32) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>4.65</td>
       <td>0.24</td>
-      <td style="color:#c00">-30.00%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-25.27%</td>
+      <td>R$ 1,61</td>
+      <td>70%</td>
+      <td style="color:#c00">-31.20%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-25.22%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,61</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>5</td>
-      <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Comércio e Distribuição</td>
-      <td>3.46</td>
-      <td>5.47 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.35) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.53</td>
-      <td style="color:#c00">-27.48%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-22.75%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,56</small></td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
-    </tr>
-<tr>
-      <td>6</td>
       <td><strong>CEAB3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>2.25</td>
       <td>3.59</td>
       <td>0.53</td>
-      <td style="color:#c00">-20.19%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-15.46%</td>
+      <td>R$ 6,64</td>
+      <td>87%</td>
+      <td style="color:#c00">-24.29%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-18.31%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 6,64</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td>7</td>
-      <td><strong>DIRR3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Construção Civil</td>
-      <td>4.00</td>
-      <td>4.90</td>
-      <td>1.80</td>
-      <td style="color:#c00">-25.99%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-21.26%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 8,23</small></td>
-      <td><span class="badge badge-orange">2/3</span></td>
+      <td>6</td>
+      <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Comércio e Distribuição</td>
+      <td>3.46</td>
+      <td>5.47</td>
+      <td>0.53</td>
+      <td>R$ 2,56</td>
+      <td>86%</td>
+      <td style="color:#c00">-27.27%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-21.29%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,56</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
-      <td>8</td>
-      <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Exploração de Imóveis</td>
-      <td>4.73</td>
-      <td>4.98 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.10) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.10</td>
-      <td style="color:#c00">-33.94%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-29.21%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,81</small></td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td><span class="badge badge-red">&#128308; 4</span></td>
-    </tr>
-<tr>
-      <td>9</td>
+      <td>7</td>
       <td><strong>USIM5</strong> <span class="badge badge-orange">~Mín52s</span></td>
       <td>Siderurgia e Metalurgia</td>
       <td>4.07</td>
       <td>4.32</td>
       <td>0.30</td>
-      <td style="color:#c00">-26.77%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-22.04%</td>
+      <td>R$ 5,47</td>
+      <td>48%</td>
+      <td style="color:#c00">-27.93%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-21.95%</td>
       <td>+10.7%<br><small style="color:#999">24/10/2025 R$ 4,94</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
-      <td>10</td>
+      <td>8</td>
       <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Alimentos Processados</td>
       <td>4.46</td>
       <td>5.56 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td>1.62</td>
-      <td style="color:#c00">-29.58%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-24.85%</td>
+      <td>R$ 2,69</td>
+      <td>54%</td>
+      <td style="color:#c00">-29.77%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-23.79%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,69</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-orange">&#128993; 3</span></td>
+    </tr>
+<tr>
+      <td>9</td>
+      <td><strong>DIRR3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Construção Civil</td>
+      <td>4.00</td>
+      <td>4.90</td>
+      <td>1.80</td>
+      <td>R$ 8,23</td>
+      <td>54%</td>
+      <td style="color:#c00">-25.86%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-19.88%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 8,23</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td>10</td>
+      <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Exploração de Imóveis</td>
+      <td>4.73</td>
+      <td>4.98 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.10) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>0.10</td>
+      <td>R$ 1,81</td>
+      <td>74%</td>
+      <td style="color:#c00">-28.74%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-22.76%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,81</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-red">&#128308; 4</span></td>
     </tr>
 <tr>
       <td>11</td>
@@ -629,108 +973,124 @@
       <td>5.55</td>
       <td>2.63</td>
       <td>0.34</td>
-      <td style="color:#c00">-39.98%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-35.24%</td>
+      <td>R$ 4,94</td>
+      <td>89%</td>
+      <td style="color:#c00">-42.69%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-36.71%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,94</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>12</td>
-      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
-      <td>1.97</td>
-      <td>14.37 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.04) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
-      <td>0.28</td>
-      <td style="color:#c00">-15.58%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-10.85%</td>
-      <td>+0.8%<br><small style="color:#999">28/10/2026 R$ 1,29</small></td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
-    </tr>
-<tr>
-      <td>13</td>
       <td><strong>VTRU3</strong> <span class="badge badge-orange">~Mín52s</span></td>
       <td>Diversos</td>
       <td>3.35</td>
       <td>1.61</td>
       <td>0.44</td>
-      <td style="color:#c00">-17.35%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-12.62%</td>
+      <td>R$ 11,62</td>
+      <td>61%</td>
+      <td style="color:#c00">-18.11%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-12.13%</td>
       <td>+5.8%<br><small style="color:#999">24/10/2025 R$ 10,98</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
+      <td>13</td>
+      <td><strong>JHSF3</strong></td>
+      <td>Construção Civil</td>
+      <td>4.18</td>
+      <td>2.88</td>
+      <td>0.82</td>
+      <td>R$ 8,70</td>
+      <td>51%</td>
+      <td style="color:#c00">-21.83%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-15.85%</td>
+      <td>+40.1%<br><small style="color:#999">24/10/2025 R$ 6,21</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr>
+<tr>
       <td>14</td>
-      <td><strong>SYNE3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Exploração de Imóveis</td>
-      <td>4.95</td>
-      <td>7.54</td>
-      <td>0.59</td>
-      <td style="color:#c00">-26.83%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-22.10%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,70</small></td>
+      <td><strong>VLID3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Serviços Diversos</td>
+      <td>3.53</td>
+      <td>4.86</td>
+      <td>0.64</td>
+      <td>R$ 14,20</td>
+      <td>44%</td>
+      <td style="color:#c00">-18.86%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-12.88%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 14,20</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>15</td>
+      <td><strong>SYNE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Exploração de Imóveis</td>
+      <td>4.95</td>
+      <td>7.54</td>
+      <td>0.59</td>
+      <td>R$ 2,70</td>
+      <td>48%</td>
+      <td style="color:#c00">-26.63%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-20.65%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,70</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td>16</td>
       <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>2.14</td>
       <td>6.05</td>
       <td>0.87</td>
-      <td style="color:#c00">-13.94%</td>
-      <td style="color:#c00">-4.73%</td>
+      <td>R$ 9,38</td>
+      <td>60%</td>
+      <td style="color:#c00">-15.19%</td>
+      <td style="color:#c00">-5.98%</td>
       <td style="color:#c00;font-weight:bold">-9.21%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 9,38</small></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
-      <td>16</td>
+      <td>17</td>
+      <td><strong>SEER3</strong></td>
+      <td>Diversos</td>
+      <td>3.42</td>
+      <td>5.07</td>
+      <td>0.90</td>
+      <td>R$ 10,92</td>
+      <td>72%</td>
+      <td style="color:#c00">-17.34%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-11.36%</td>
+      <td>+27.4%<br><small style="color:#999">17/11/2025 R$ 8,57</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr>
+<tr>
+      <td>18</td>
       <td><strong>GMAT3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio e Distribuição</td>
       <td>4.84</td>
       <td>4.96</td>
       <td>0.72</td>
-      <td style="color:#c00">-23.33%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-18.59%</td>
+      <td>R$ 3,55</td>
+      <td>58%</td>
+      <td style="color:#c00">-24.95%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-18.97%</td>
       <td>+0.0%<br><small style="color:#999">28/10/2026 R$ 3,55</small></td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td><span class="badge badge-green">&#128994; 1</span></td>
-    </tr>
-<tr>
-      <td>17</td>
-      <td><strong>JHSF3</strong></td>
-      <td>Construção Civil</td>
-      <td>4.18</td>
-      <td>2.88</td>
-      <td>0.82</td>
-      <td style="color:#c00">-20.18%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-15.45%</td>
-      <td>+40.1%<br><small style="color:#999">24/10/2025 R$ 6,21</small></td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-green">&#128994; 0</span></td>
-    </tr>
-<tr>
-      <td>18</td>
-      <td><strong>VLID3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Serviços Diversos</td>
-      <td>3.53</td>
-      <td>4.86</td>
-      <td>0.64</td>
-      <td style="color:#c00">-15.22%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-10.49%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 14,20</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
@@ -739,36 +1099,40 @@
       <td><strong>VALE3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Mineração</td>
       <td>5.23</td>
-      <td>125.83 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.03) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>125.83</td>
       <td>1.41</td>
-      <td style="color:#c00">-22.86%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-18.13%</td>
+      <td>R$ 60,05</td>
+      <td>28%</td>
+      <td style="color:#c00">-23.31%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-17.33%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 60,05</small></td>
       <td><span class="badge badge-gray">1/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>20</td>
-      <td><strong>CURY3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Construção Civil</td>
-      <td>4.75</td>
-      <td>7.26</td>
-      <td>4.82</td>
-      <td style="color:#c00">-19.75%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-15.02%</td>
-      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 26,16</small></td>
+      <td><strong>CMIN3</strong> <span class="badge badge-orange">~Mín52s</span></td>
+      <td>Mineração</td>
+      <td>5.68</td>
+      <td>11.32</td>
+      <td>3.60</td>
+      <td>R$ 4,50</td>
+      <td>42%</td>
+      <td style="color:#c00">-25.99%</td>
+      <td style="color:#c00">-5.98%</td>
+      <td style="color:#c00;font-weight:bold">-20.01%</td>
+      <td>+10.3%<br><small style="color:#999">19/05/2026 R$ 4,08</small></td>
       <td><span class="badge badge-gray">1/3</span></td>
       <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr></tbody>
   </table>
   
-  <h2>Janela 90 dias (desde 2026-08-01)</h2>
+  <h2>Janela 90 dias (desde 2026-08-02)</h2>
   <table>
     <thead><tr>
       <th>#</th><th>Ticker</th><th>Setor</th>
-      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
+      <th>EV/EBIT</th><th>P/L</th><th>P/VP</th><th>Preço</th><th>σ</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
       <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
@@ -777,14 +1141,16 @@
       <td><strong>PLPL3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Construção Civil</td>
       <td>1.35</td>
-      <td>2.99 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.38) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>2.99</td>
       <td>0.82</td>
+      <td>R$ 4,51</td>
+      <td>74%</td>
       <td style="color:#c00">-38.72%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-33.86%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,51</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>2</td>
@@ -793,6 +1159,8 @@
       <td>3.07</td>
       <td>2.97</td>
       <td>0.72</td>
+      <td>R$ 15,53</td>
+      <td>71%</td>
       <td style="color:#c00">-37.15%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-32.29%</td>
@@ -807,6 +1175,8 @@
       <td>2.14</td>
       <td>6.05</td>
       <td>0.87</td>
+      <td>R$ 9,38</td>
+      <td>60%</td>
       <td style="color:#c00">-31.03%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-26.17%</td>
@@ -821,6 +1191,8 @@
       <td>2.25</td>
       <td>3.59</td>
       <td>0.53</td>
+      <td>R$ 6,64</td>
+      <td>87%</td>
       <td style="color:#c00">-29.66%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-24.80%</td>
@@ -835,6 +1207,8 @@
       <td>3.30</td>
       <td>4.24</td>
       <td>1.59</td>
+      <td>R$ 20,34</td>
+      <td>61%</td>
       <td style="color:#c00">-32.94%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-28.08%</td>
@@ -847,14 +1221,16 @@
       <td><strong>COGN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
       <td>3.83</td>
-      <td>4.65 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.32) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>4.65</td>
       <td>0.24</td>
+      <td>R$ 1,61</td>
+      <td>70%</td>
       <td style="color:#c00">-29.39%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-24.52%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,61</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>7</td>
@@ -863,6 +1239,8 @@
       <td>4.00</td>
       <td>4.90</td>
       <td>1.80</td>
+      <td>R$ 8,23</td>
+      <td>54%</td>
       <td style="color:#c00">-27.49%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-22.63%</td>
@@ -877,6 +1255,8 @@
       <td>4.07</td>
       <td>4.32</td>
       <td>0.30</td>
+      <td>R$ 5,47</td>
+      <td>48%</td>
       <td style="color:#c00">-25.68%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-20.82%</td>
@@ -891,6 +1271,8 @@
       <td>4.95</td>
       <td>7.54</td>
       <td>0.59</td>
+      <td>R$ 2,70</td>
+      <td>48%</td>
       <td style="color:#c00">-33.99%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-29.12%</td>
@@ -905,6 +1287,8 @@
       <td>3.53</td>
       <td>4.86</td>
       <td>0.64</td>
+      <td>R$ 14,20</td>
+      <td>44%</td>
       <td style="color:#c00">-22.28%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-17.41%</td>
@@ -919,6 +1303,8 @@
       <td>4.01</td>
       <td>1.95</td>
       <td>0.55</td>
+      <td>R$ 6,10</td>
+      <td>85%</td>
       <td style="color:#c00">-23.27%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-18.41%</td>
@@ -933,6 +1319,8 @@
       <td>4.72</td>
       <td>3.85</td>
       <td>1.09</td>
+      <td>R$ 3,80</td>
+      <td>43%</td>
       <td style="color:#c00">-28.44%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-23.57%</td>
@@ -947,6 +1335,8 @@
       <td>4.46</td>
       <td>5.56 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td>1.62</td>
+      <td>R$ 2,69</td>
+      <td>54%</td>
       <td style="color:#c00">-26.50%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-21.64%</td>
@@ -961,6 +1351,8 @@
       <td>5.55</td>
       <td>2.63</td>
       <td>0.34</td>
+      <td>R$ 4,94</td>
+      <td>89%</td>
       <td style="color:#c00">-47.72%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-42.86%</td>
@@ -975,11 +1367,13 @@
       <td>1.97</td>
       <td>14.37 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.04) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td>0.28</td>
+      <td>R$ 1,30</td>
+      <td>81%</td>
       <td style="color:#c00">-15.03%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-10.17%</td>
       <td>+0.8%<br><small style="color:#999">28/10/2026 R$ 1,29</small></td>
-      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">2/3</span></td>
       <td><span class="badge badge-orange">&#128993; 3</span></td>
     </tr>
 <tr>
@@ -987,14 +1381,16 @@
       <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio e Distribuição</td>
       <td>3.46</td>
-      <td>5.47 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.35) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
+      <td>5.47</td>
       <td>0.53</td>
+      <td>R$ 2,56</td>
+      <td>86%</td>
       <td style="color:#c00">-19.50%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-14.63%</td>
       <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,56</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td><span class="badge badge-orange">&#128993; 2</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>17</td>
@@ -1003,6 +1399,8 @@
       <td>4.18</td>
       <td>2.88</td>
       <td>0.82</td>
+      <td>R$ 8,70</td>
+      <td>51%</td>
       <td style="color:#c00">-21.34%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-16.48%</td>
@@ -1017,6 +1415,8 @@
       <td>5.25</td>
       <td>6.99 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.15) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td>0.84</td>
+      <td>R$ 2,46</td>
+      <td>105%</td>
       <td style="color:#c00">-26.35%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-21.49%</td>
@@ -1031,6 +1431,8 @@
       <td>5.47</td>
       <td>4.63 <span class="badge badge-orange" title="P/EBIT÷P/L (conv=0.12) &lt; 0,40 e dívida líquida &gt; 0">juros&#8593;</span></td>
       <td>0.57</td>
+      <td>R$ 5,87</td>
+      <td>115%</td>
       <td style="color:#c00">-25.51%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-20.65%</td>
@@ -1045,6 +1447,8 @@
       <td>6.24</td>
       <td>3.18</td>
       <td>0.33</td>
+      <td>R$ 3,34</td>
+      <td>64%</td>
       <td style="color:#c00">-30.85%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-25.99%</td>
@@ -1054,6 +1458,6 @@
     </tr></tbody>
   </table>
 
-  <footer>Gerado em 30/10/2026, 23:53:42 · quant-b3 · Não é recomendação de investimento.</footer>
+  <footer>Gerado em 31/10/2026, 00:45:27 · quant-b3 · Não é recomendação de investimento.</footer>
 </body>
 </html>

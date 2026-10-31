@@ -314,6 +314,7 @@ export interface ScanPriceMaps {
   low52w: Map<string, number>; // mínimo de fechamento nos últimos 252 pregões
   low52wDate: Map<string, string>; // data "YYYYMMDD" da mínima de 52 semanas
   mom12mMap: Map<string, number | null>; // momentum 12-1m por ticker
+  volMap: Map<string, number>; // volatilidade anualizada (últimos 252 pregões)
 }
 
 /** Retorna último fechamento ≤ date para o ticker (bars ordenados asc). */
@@ -359,6 +360,7 @@ export async function buildScanPriceMaps(
   const low52w = new Map<string, number>();
   const low52wDate = new Map<string, string>();
   const mom12mMap = new Map<string, number | null>();
+  const volMap = new Map<string, number>();
 
   for (const [ticker, bars] of barMap) {
     if (bars.length === 0) continue;
@@ -394,7 +396,11 @@ export async function buildScanPriceMaps(
     const p13mBar = Nb > MOM_DAYS_13M ? bars[Nb - 1 - MOM_DAYS_13M] : undefined;
     const mom12m = p1mBar && p13mBar && p13mBar.close > 0 ? p1mBar.close / p13mBar.close - 1 : null;
     mom12mMap.set(ticker, mom12m);
+
+    // Volatilidade anualizada (últimos 252 pregões)
+    const vol = calcVol(bars.slice(-TRADING_DAYS_12M).map((b) => b.close));
+    if (vol !== null) volMap.set(ticker, vol);
   }
 
-  return { priceToday, price30d, price60d, price90d, low52w, low52wDate, mom12mMap };
+  return { priceToday, price30d, price60d, price90d, low52w, low52wDate, mom12mMap, volMap };
 }
