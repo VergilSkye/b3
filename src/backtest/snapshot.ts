@@ -24,6 +24,9 @@ const TRADING_DAYS_2M = 42;
 // Pregões em 12 meses (para volatilidade)
 const TRADING_DAYS_12M = 252;
 const MIN_PRICES_VOL = 21;
+// Momentum 12-1m
+const MOM_DAYS_1M = 21;
+const MOM_DAYS_13M = 273;
 
 interface DayBar {
   date: string; // YYYYMMDD
@@ -234,6 +237,12 @@ export async function buildSnapshot(
         ? recentBars.reduce((s, b) => s + b.volBRL, 0) / recentBars.length
         : null;
 
+    // mom12m: retorno de 13m atrás até 1m atrás (momentum 12-1m)
+    const Nb = bars.length;
+    const p1mBar = Nb > MOM_DAYS_1M ? bars[Nb - 1 - MOM_DAYS_1M] : undefined;
+    const p13mBar = Nb > MOM_DAYS_13M ? bars[Nb - 1 - MOM_DAYS_13M] : undefined;
+    const mom12m = p1mBar && p13mBar && p13mBar.close > 0 ? p1mBar.close / p13mBar.close - 1 : null;
+
     // Patrimônio líquido (em R$) — passado diretamente ao RawStock
     const patLiq = fund.patLiq;
 
@@ -252,6 +261,7 @@ export async function buildSnapshot(
       pl12m,
       patLiq,
       roe,
+      mom12m,
     });
   }
 

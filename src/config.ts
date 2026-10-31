@@ -4,6 +4,7 @@ export const DEFAULT_CONFIG: Config = {
   liquidezMin: 1_000_000,
   nAcoes: 20,
   corteVol: 0.25,
+  corteMomento: 0.1, // exclui o pior decil de momentum (12-1m)
   metricas: ["evEbit", "pl"],
 
   nAcoesFin: 5,

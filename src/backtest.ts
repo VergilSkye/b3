@@ -35,6 +35,7 @@ const BASE_CONFIG: Config = {
   ...DEFAULT_CONFIG,
   liquidezMin: 1_000_000,
   corteVol: 0.25,
+  corteMomento: 0.1,
   nAcoes: 20,
   nAcoesFin: 5,
   metricas: ["evEbit", "pl"],
@@ -51,13 +52,15 @@ interface GridCfg {
 }
 
 const GRID: GridCfg[] = [
-  { label: "n=20 vol=25%", overrides: {}, isBase: true },
-  { label: "n=15 vol=25%", overrides: { nAcoes: 15 } },
-  { label: "n=25 vol=25%", overrides: { nAcoes: 25 } },
-  { label: "n=20 vol=0%", overrides: { corteVol: 0 } },
-  { label: "n=20 vol=50%", overrides: { corteVol: 0.5 } },
-  { label: "n=20 só EV/EBIT", overrides: { metricas: ["evEbit"] } },
-  { label: "n=20 só P/L", overrides: { metricas: ["pl"] } },
+  { label: "n=20 vol=25% mom=10%", overrides: {}, isBase: true },
+  { label: "n=15 vol=25% mom=10%", overrides: { nAcoes: 15 } },
+  { label: "n=25 vol=25% mom=10%", overrides: { nAcoes: 25 } },
+  { label: "n=20 vol=0% mom=10%", overrides: { corteVol: 0 } },
+  { label: "n=20 vol=50% mom=10%", overrides: { corteVol: 0.5 } },
+  { label: "n=20 só EV/EBIT mom=10%", overrides: { metricas: ["evEbit"] } },
+  { label: "n=20 só P/L mom=10%", overrides: { metricas: ["pl"] } },
+  { label: "n=20 sem momentum", overrides: { corteMomento: 0 } },
+  { label: "n=20 mom=20%", overrides: { corteMomento: 0.2 } },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 

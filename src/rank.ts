@@ -5,7 +5,7 @@ import { DEFAULT_CONFIG } from "./config.js";
 import { calcDiffResult } from "./diff.js";
 import { gravarHtml } from "./report/ranking-html.js";
 import { fetchFundamentus } from "./sources/fundamentus.js";
-import { buildVolMap } from "./sources/prices.js";
+import { buildVolAndMomMaps } from "./sources/prices.js";
 import { enriquecerComVol, selectPortfolio } from "./strategy.js";
 
 const CACHE_DIR = "data/cache";
@@ -68,8 +68,8 @@ async function main() {
   );
   const tickersCandidatos = candidatos.map((a) => a.ticker);
 
-  console.log(`Calculando volatilidade via COTAHIST (${tickersCandidatos.length} candidatos)...`);
-  const volMap = await buildVolMap(tickersCandidatos, CACHE_DIR);
+  console.log(`Calculando vol/momentum via COTAHIST (${tickersCandidatos.length} candidatos)...`);
+  const { volMap, momMap } = await buildVolAndMomMaps(tickersCandidatos, CACHE_DIR);
 
   // Verificar cobertura sobre candidatos (não sobre todos os tickers brutos)
   const comVol = tickersCandidatos.filter((t) => (volMap.get(t) ?? null) !== null).length;
@@ -81,7 +81,8 @@ async function main() {
   }
 
   // 3–4. Enriquecer e rodar estratégia
-  const acoes = enriquecerComVol(rawAcoes, volMap);
+  const rawAcoesComMom = rawAcoes.map((a) => ({ ...a, mom12m: momMap.get(a.ticker) ?? null }));
+  const acoes = enriquecerComVol(rawAcoesComMom, volMap);
   const resultado = selectPortfolio(acoes, DEFAULT_CONFIG);
 
   console.log(`  Geral: ${resultado.geral.length} ações`);

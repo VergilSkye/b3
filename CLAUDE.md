@@ -15,6 +15,7 @@ Leia o `plan.md` completo antes de qualquer ação. Este arquivo é um resumo r�
 ```
 pnpm rank        # gera ranking do mês
 pnpm backtest    # roda backtest (sob demanda)
+pnpm scan        # candidatos à recuperação pós circuit-breaker (30/60/90d)
 pnpm notify      # envia notificação Telegram
 pnpm test        # vitest
 pnpm typecheck   # tsc --noEmit
@@ -29,6 +30,7 @@ Ao fim de cada marco: `pnpm typecheck && pnpm test && pnpm lint`.
 - Notificação: **Telegram** (`TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID` via secrets/`.env`)
 - Bancos/seguradoras: **ranking separado** — métricas P/VP + P/L (EV/EBIT não se aplica a financeiras)
 - Parâmetros iniciais — geral: **20 ações**, **EV/EBIT + P/L**; financeiras: **5 ações**, **P/VP + P/L**; rebalanceamento **mensal**
+- Filtro de momentum **ativo** (`corteMomento = 0.10`): descarta o decil inferior do retorno 12-1m para evitar "facas caindo". Ações sem dados passam. Parâmetro do backtest grid para validação.
 - Executar **M1–M4** antes do backtest (M5–M8)
 
 ## Bancos e seguradoras
@@ -59,14 +61,15 @@ TELEGRAM_CHAT_ID  # chat de destino
 
 ```
 src/
-  config.ts          # DEFAULT_CONFIG: liquidezMin, nAcoes, corteVol, metricas
+  config.ts          # DEFAULT_CONFIG: liquidezMin, nAcoes, corteVol, corteMomento, metricas
   types.ts           # RawStock, Stock, Snapshot, Portfolio, Config
   utils/             # parseBR, rankBy, quantile, retry
   sources/           # fundamentus, prices, cvm, cotahist  (I/O aqui)
   strategy.ts        # selectPortfolio(snapshot, config) — função pura
   rank.ts            # entrypoint pnpm rank
   diff.ts            # entradas/saídas vs mês anterior
-  report/            # ranking-html, backtest-html
+  scan.ts            # entrypoint pnpm scan (pós circuit-breaker)
+  report/            # ranking-html, backtest-html, scan-html
   notify.ts          # Telegram
   backtest/          # snapshot, engine, metrics
 data/
@@ -77,6 +80,7 @@ tests/
   fixtures/          # HTML salvo do Fundamentus para testes offline
 ```
 
-## Marco atual: M1
+## Marco atual: M8/M9 completos
 
-Ver checklist detalhado na seção 9 do `plan.md`.
+M1–M7 concluídos. M8 (calibrar config com backtest) e M9 (scan pós-CB) implementados.
+Próximo passo: rodar `pnpm backtest --grid` no CI para validar impacto do filtro de momentum.

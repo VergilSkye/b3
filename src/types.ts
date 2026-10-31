@@ -9,6 +9,7 @@ export interface RawStock {
   pl12m: number | null; // Lucro líquido 12m (para filtro > 0)
   patLiq: number | null; // Patrimônio líquido
   roe: number | null; // ROE (opcional, para financeiras)
+  mom12m: number | null; // Momentum 12-1m: retorno de 13m atrás até 1m atrás
 }
 
 // Ação após enriquecimento com volatilidade
@@ -27,7 +28,8 @@ export interface Snapshot {
 export interface Config {
   liquidezMin: number;
   nAcoes: number;
-  corteVol: number; // 0–1; fração do quartil superior a descartar
+  corteVol: number; // 0–1; fração do quartil superior a descartar (volatilidade)
+  corteMomento: number; // 0–1; fração do decil inferior a descartar (momentum 12-1m)
   metricas: MetricaValor[]; // métricas do ranking geral
 
   nAcoesFin: number;

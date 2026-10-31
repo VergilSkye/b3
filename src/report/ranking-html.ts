@@ -40,6 +40,7 @@ const DISPLAY: Record<string, string> = {
   pvp: "P/VP",
   roe: "ROE",
   volatilidade: "Vol12m",
+  mom12m: "Mom12m",
   liquidezMedia: "Liq2m (R$)",
 };
 
@@ -51,11 +52,12 @@ function fmt(campo: string, valor: string | undefined): string {
     return n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(0)}M` : valor;
   }
   if (campo === "volatilidade") return `${(Number(valor) * 100).toFixed(1)}%`;
+  if (campo === "mom12m") return `${(Number(valor) * 100).toFixed(1)}%`;
   return valor;
 }
 
 function tabelaAcoes(rows: CsvRow[], metricas: string[]): string {
-  const cols = [...metricas, "volatilidade", "liquidezMedia"];
+  const cols = [...metricas, "mom12m", "volatilidade", "liquidezMedia"];
   const cabecalho = ["#", "Ticker", "Setor", ...cols.map((m) => DISPLAY[m] ?? m), "Score"]
     .map((h) => `<th>${h}</th>`)
     .join("");

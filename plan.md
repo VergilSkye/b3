@@ -25,12 +25,13 @@ Stack: **Node.js 22 + TypeScript** (nada de Python).
 
 ---
 
-## 2. A estratégia (4 passos)
+## 2. A estratégia (5 passos)
 
 1. **Universo barato e líquido**: todas as ações da B3, filtradas por liquidez média diária (2 meses) ≥ R$ 1.000.000.
 2. **Tirar prejuízo**: lucro líquido 12m > 0 (P/L > 0) e patrimônio líquido > 0.
 3. **Tirar as mais voláteis**: calcular a volatilidade anualizada de 12 meses (desvio-padrão dos log-retornos diários × √252) e descartar o quartil superior (`corteVol = 0.25`, configurável).
-4. **Ranquear por índice de valor e comprar as 20 primeiras**: score = soma dos ranks de EV/EBIT e P/L; menor score = melhor. Peso igual.
+4. **Filtro de momentum (value-momentum)**: calcular retorno 12-1m (de 13 meses atrás até 1 mês atrás, excluindo o último mês) e descartar o decil inferior (`corteMomento = 0.10`, configurável). Ações sem dados de preço passam. Evita "facas caindo" — trailing P/L pode parecer barato enquanto o lucro deteriora. Baseado em Asness et al. (1997) / AQR.
+5. **Ranquear por índice de valor e comprar as 20 primeiras**: score = soma dos ranks de EV/EBIT e P/L; menor score = melhor. Peso igual.
 
 Regras adicionais:
 - **Deduplicar classes** da mesma empresa (TAEE3/TAEE4/TAEE11 → mesma raiz de 4 letras): manter a mais líquida.
@@ -133,7 +134,7 @@ quant-b3/
 └── CLAUDE.md                # convenções para IA assistente
 ```
 
-Scripts no `package.json`: `rank`, `backtest`, `notify`, `test`, `lint`, `typecheck`.
+Scripts no `package.json`: `rank`, `backtest`, `scan`, `notify`, `test`, `lint`, `typecheck`.
 
 ---
 
@@ -254,6 +255,7 @@ Só `workflow_dispatch` com inputs (período, grid). `actions/cache` para `data/
 | **M6** | Motor de backtest + métricas | curva de 1 config vs Ibovespa |
 | **M7** | Grid + relatório in/out-of-sample | página de backtest publicada |
 | **M8** | Ajustar `config.ts` com base no backtest | ranking mensal usa parâmetros validados |
+| **M9** | `pnpm scan` — candidatos pós circuit-breaker | top-20 por janela (30/60/90d) publicado em `docs/scan/` |
 
 ---
 

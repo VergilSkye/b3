@@ -10,18 +10,19 @@ import { scoreByRanks } from "./utils/rank.js";
  * Não acessa rede, não lê arquivos — pode ser usada ao vivo e no backtest.
  */
 export function selectPortfolio(acoes: Stock[], config: Config): SelectResult {
-  const { liquidezMin, corteVol } = config;
+  const { liquidezMin, corteVol, corteMomento } = config;
 
   // 1. Separar grupos
   const gerais = acoes.filter((a) => a.grupo === "geral");
   const financeiras = acoes.filter((a) => a.grupo === "financeiro");
 
   return {
-    geral: rankGroup(gerais, liquidezMin, corteVol, config.metricas, config.nAcoes),
+    geral: rankGroup(gerais, liquidezMin, corteVol, corteMomento, config.metricas, config.nAcoes),
     financeiros: rankGroup(
       financeiras,
       liquidezMin,
       corteVol,
+      corteMomento,
       config.metricasFin,
       config.nAcoesFin,
     ),
@@ -35,6 +36,7 @@ function rankGroup(
   acoes: Stock[],
   liquidezMin: number,
   corteVol: number,
+  corteMomento: number,
   metricas: MetricaValor[],
   topN: number,
 ): Stock[] {
@@ -61,6 +63,15 @@ function rankGroup(
     const limiarVol = quantile(vols, 1 - corteVol);
     if (limiarVol !== null) {
       filtradas = filtradas.filter((a) => a.volatilidade === null || a.volatilidade <= limiarVol);
+    }
+  }
+
+  // 4b. Corte de momentum: descartar decil inferior (ações sem mom12m passam)
+  if (corteMomento > 0 && filtradas.length > 0) {
+    const moms = filtradas.map((a) => a.mom12m).filter((m): m is number => m !== null);
+    const limiarMom = quantile(moms, corteMomento);
+    if (limiarMom !== null) {
+      filtradas = filtradas.filter((a) => a.mom12m === null || a.mom12m >= limiarMom);
     }
   }
 

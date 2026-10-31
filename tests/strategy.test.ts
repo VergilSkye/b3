@@ -13,6 +13,7 @@ function makeStock(overrides: Partial<RawStock> & { ticker: string }): RawStock 
     pl12m: 1_000_000,
     patLiq: 50_000_000,
     roe: 0.15,
+    mom12m: null,
     ...overrides,
   };
 }

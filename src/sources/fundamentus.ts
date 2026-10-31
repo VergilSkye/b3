@@ -32,6 +32,7 @@ const RawRowSchema = z.object({
   pl12m: z.number().nullable(),
   patLiq: z.number().nullable(),
   roe: z.number().nullable(),
+  mom12m: z.number().nullable().default(null), // preenchido depois via COTAHIST
 });
 
 // Índices verificados na página real do Fundamentus resultado.php (2026-10):
