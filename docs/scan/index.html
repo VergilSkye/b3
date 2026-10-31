@@ -5,9 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scan pós circuit-breaker — quant-b3</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 1250px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h1 { border-bottom: 2px solid #333; padding-bottom: .5rem; }
+    body { font-family: system-ui, sans-serif; max-width: 1300px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2.5rem; color: #444; }
+    
+  .site-nav { display:flex; align-items:center; gap:1.5rem; padding:.5rem 0 .75rem; border-bottom:2px solid #e8e8e8; margin-bottom:1.75rem; flex-wrap:wrap; }
+  .nav-brand { font-weight:700; color:#222; font-size:.95rem; letter-spacing:.02em; margin-right:.25rem; }
+  .nav-links { display:flex; gap:.25rem; align-items:center; flex-wrap:wrap; }
+  .nav-pill { display:inline-block; padding:.25rem .75rem; border-radius:99px; font-size:.82rem; text-decoration:none; border:1px solid transparent; transition:background .15s; }
+  .nav-pill-active { background:#222; color:#fff; font-weight:600; cursor:default; }
+  .nav-pill-link { color:#0066cc; border-color:#cce0ff; background:#f0f7ff; }
+  .nav-pill-link:hover { background:#daeeff; }
+  .nav-date { font-size:.7rem; color:#888; margin-left:.3rem; }
+
     table { width: 100%; border-collapse: collapse; margin-top: .75rem; font-size: .875rem; }
     th, td { padding: .4rem .6rem; border: 1px solid #ddd; text-align: right; white-space: nowrap; }
     th:nth-child(-n+3), td:nth-child(-n+3) { text-align: left; }
@@ -17,13 +27,23 @@
     a { color: #0066cc; }
     footer { margin-top: 3rem; font-size: .8rem; color: #888; }
     .note { background: #fff8e1; border-left: 4px solid #fbc02d; padding: .75rem 1rem; margin: 1rem 0; font-size: .875rem; }
+    .sector-summary { font-size: .85rem; color: #555; margin: .5rem 0 1rem; }
     .badge { display: inline-block; font-size: .7rem; font-weight: bold; padding: .1rem .35rem; border-radius: 3px; margin-left: .3rem; vertical-align: middle; }
     .badge-red    { background: #fde8e8; color: #c00; border: 1px solid #f5c6c6; }
     .badge-orange { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+    .badge-green  { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
     .badge-gray   { background: #f5f5f5; color: #666; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
+  <nav class="site-nav">
+  <span class="nav-brand">quant-b3</span>
+  <div class="nav-links">
+    <a href="../" class="nav-pill nav-pill-link">Ranking<span class="nav-date">30/10/2026</span></a>
+    <a href="../backtest/" class="nav-pill nav-pill-link">Backtest<span class="nav-date">30/10/2026</span></a>
+    <span class="nav-pill nav-pill-active">Scan CB</span>
+  </div>
+</nav>
   <h1>Scan pós circuit-breaker — candidatos à recuperação</h1>
   <p>
     Data de referência: <strong>2026-10-30</strong> &nbsp;·&nbsp;
@@ -32,18 +52,22 @@
   </p>
   <div class="note">
     <strong>Metodologia:</strong> score = rank(queda relativa ↑) + rank(EV/EBIT ↑).
-    Filtragem: liquidez ≥ R$1M · EV/EBIT > 0 · P/L > 0 · financeiras excluídas (usar ranking separado).
-    Queda relativa = retorno da ação − retorno do BOVA11 no período.
-    <strong>↑ Mín52s</strong>: percentual acima da mínima de 52 semanas (<span class="badge badge-red">Mín52s</span> ≤ 5%, <span class="badge badge-orange">~Mín52s</span> ≤ 15%).
-    <strong>Janelas</strong>: em quantas das 3 janelas o ticker aparece (<span class="badge badge-red">3/3</span> = sinal mais persistente).
+    Filtragem: liquidez ≥ R$1M · EV/EBIT > 0 · P/L > 0 · financeiras excluídas · 1 ticker por empresa (mais líquido) · ↑ Mín52s &gt; 200% excluídos como evento corporativo.<br>
+    <strong>Queda relativa</strong> = retorno da ação − retorno BOVA11.
+    <strong>↑ Mín52s</strong>: % acima da mínima de 52 semanas (<span class="badge badge-red">Mín52s</span> ≤ 5%, <span class="badge badge-orange">~Mín52s</span> ≤ 15%).
+    <strong>Janelas</strong>: em quantas das 3 janelas aparece (<span class="badge badge-red">3/3</span> = mais persistente).
+    <strong>Risco</strong> = knife score 0–4 (<span class="badge badge-green">&#128994;</span> baixo · <span class="badge badge-orange">&#128993;</span> médio · <span class="badge badge-red">&#128308;</span> alto).
+    <strong>juros↑</strong> = P/L ÷ EV/EBIT &gt; 2,5 (dívida consome o lucro).
+    Consenso limitado a 2 tickers por setor.
   </div>
 
   
   <h2>Consenso (2+ janelas)</h2>
   <p>Ações que aparecem em 2 ou 3 das 3 janelas — sinal mais robusto de underperformance relativa persistente.</p>
+  <p class="sector-summary">Distribuição setorial: <strong>Construção Civil</strong>: 14% &nbsp;·&nbsp; <strong>Comércio</strong>: 14% &nbsp;·&nbsp; <strong>Diversos</strong>: 14% &nbsp;·&nbsp; <strong>Comércio e Distribuição</strong>: 14% &nbsp;·&nbsp; <strong>Exploração de Imóveis</strong>: 14% &nbsp;·&nbsp; <strong>Alimentos Processados</strong>: 7% &nbsp;·&nbsp; <strong>Siderurgia e Metalurgia</strong>: 7% &nbsp;·&nbsp; <strong>Serv.Méd.Hospit. Análises e Diagnósticos</strong>: 7% &nbsp;·&nbsp; <strong>Serviços Diversos</strong>: 7%</p>
   <table>
     <thead><tr>
-      <th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Janelas</th><th>↑ Mín52s</th>
+      <th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Janelas</th><th>↑ Mín52s</th><th>Risco</th>
     </tr></thead>
     <tbody><tr>
       <td><strong>PLPL3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -52,6 +76,7 @@
       <td>2.99</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>MDNE3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -60,22 +85,16 @@
       <td>2.97</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
-    </tr>
-<tr>
-      <td><strong>TEND3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Construção Civil</td>
-      <td>3.30</td>
-      <td>4.24</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>2.14</td>
-      <td>6.05</td>
+      <td>6.05 <span class="badge badge-orange">juros&#8593;</span></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-red">&#128308; 3</span></td>
     </tr>
 <tr>
       <td><strong>CEAB3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -84,6 +103,7 @@
       <td>3.59</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>COGN3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -92,6 +112,7 @@
       <td>4.65</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -100,6 +121,7 @@
       <td>5.47</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -108,46 +130,25 @@
       <td>5.56</td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td><strong>USIM5</strong> <span class="badge badge-orange">~Mín52s</span></td>
+      <td>Siderurgia e Metalurgia</td>
+      <td>4.07</td>
+      <td>4.32</td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td>+10.7%</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
       <td>1.97</td>
-      <td>14.37</td>
+      <td>14.37 <span class="badge badge-orange">juros&#8593;</span></td>
       <td><span class="badge badge-red">3/3</span></td>
       <td>+0.8%</td>
-    </tr>
-<tr>
-      <td><strong>ESPA3</strong></td>
-      <td>Comércio</td>
-      <td>5.12</td>
-      <td>22.05</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>+540.3%</td>
-    </tr>
-<tr>
-      <td><strong>SBFG3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Comércio</td>
-      <td>5.55</td>
-      <td>2.63</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>+0.0%</td>
-    </tr>
-<tr>
-      <td><strong>JHSF3</strong></td>
-      <td>Construção Civil</td>
-      <td>4.18</td>
-      <td>2.88</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>+40.1%</td>
-    </tr>
-<tr>
-      <td><strong>DIRR3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Construção Civil</td>
-      <td>4.00</td>
-      <td>4.90</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -156,22 +157,7 @@
       <td>4.98</td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td>+0.0%</td>
-    </tr>
-<tr>
-      <td><strong>USIM5</strong> <span class="badge badge-orange">~Mín52s</span></td>
-      <td>Siderurgia e Metalurgia</td>
-      <td>4.07</td>
-      <td>4.32</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>+10.7%</td>
-    </tr>
-<tr>
-      <td><strong>VLID3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Serviços Diversos</td>
-      <td>3.53</td>
-      <td>4.86</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>VAMO3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -180,6 +166,7 @@
       <td>6.99</td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td><strong>SYNE3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -188,14 +175,16 @@
       <td>7.54</td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td><strong>VTRU3</strong> <span class="badge badge-orange">~Mín52s</span></td>
-      <td>Diversos</td>
-      <td>3.35</td>
-      <td>1.61</td>
+      <td><strong>VLID3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Serviços Diversos</td>
+      <td>3.53</td>
+      <td>4.86</td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>+5.8%</td>
+      <td>+0.0%</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td><strong>GMAT3</strong> <span class="badge badge-red">Mín52s</span></td>
@@ -204,6 +193,19 @@
       <td>4.96</td>
       <td><span class="badge badge-orange">2/3</span></td>
       <td>+0.0%</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr></tbody>
+  </table>
+  <p class="note" style="margin-top:.5rem">Removidos por concentração setorial (&gt;2 por setor): TEND3, SBFG3, JHSF3, DIRR3, MOVI3, VTRU3</p>
+  
+  <h2>&#9888;&#65039; Dados suspeitos — possível evento corporativo</h2>
+  <p class="note">Tickers com ↑ Mín52s &gt; 200%: preço atual muito acima da mínima de 52 semanas. Pode indicar grupamento ou desdobramento não ajustado no COTAHIST. <strong>Excluídos do ranking.</strong></p>
+  <table>
+    <thead><tr><th>Ticker</th><th>Setor</th><th>↑ Mín52s</th></tr></thead>
+    <tbody><tr>
+      <td><strong>ESPA3</strong></td>
+      <td>Comércio</td>
+      <td>+540%</td>
     </tr></tbody>
   </table>
   
@@ -213,7 +215,7 @@
       <th>#</th><th>Ticker</th><th>Setor</th>
       <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
-      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Score</th>
+      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
     <tbody><tr>
       <td>1</td>
@@ -225,9 +227,9 @@
       <td style="color:#c00">-39.71%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-30.17%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 15,53</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>11</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>2</td>
@@ -239,9 +241,9 @@
       <td style="color:#c00">-32.69%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-23.14%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,51</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>17</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>3</td>
@@ -253,23 +255,23 @@
       <td style="color:#c00">-33.80%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-24.25%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 6,64</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>17</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>4</td>
       <td><strong>ASAI3</strong> <span class="badge badge-orange">~Mín52s</span></td>
       <td>Comércio e Distribuição</td>
       <td>3.38</td>
-      <td>11.06</td>
+      <td>11.06 <span class="badge badge-orange">juros&#8593;</span></td>
       <td>1.68</td>
       <td style="color:#c00">-28.55%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-19.00%</td>
-      <td>+10.9%</td>
+      <td>+10.9%<br><small style="color:#999">09/01/2026 R$ 7,04</small></td>
       <td><span class="badge badge-gray">1/3</span></td>
-      <td>34</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>5</td>
@@ -281,68 +283,12 @@
       <td style="color:#c00">-30.60%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-21.06%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,61</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>35</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>6</td>
-      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
-      <td>1.97</td>
-      <td>14.37</td>
-      <td>0.28</td>
-      <td style="color:#c00">-21.69%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-12.14%</td>
-      <td>+0.8%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>40</td>
-    </tr>
-<tr>
-      <td>7</td>
-      <td><strong>TEND3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Construção Civil</td>
-      <td>3.30</td>
-      <td>4.24</td>
-      <td>1.59</td>
-      <td style="color:#c00">-24.69%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-15.15%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>41</td>
-    </tr>
-<tr>
-      <td>8</td>
-      <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Comércio e Distribuição</td>
-      <td>3.46</td>
-      <td>5.47</td>
-      <td>0.53</td>
-      <td style="color:#c00">-25.80%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-16.25%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>42</td>
-    </tr>
-<tr>
-      <td>9</td>
-      <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Alimentos Processados</td>
-      <td>4.46</td>
-      <td>5.56</td>
-      <td>1.62</td>
-      <td style="color:#c00">-31.73%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-22.18%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>42</td>
-    </tr>
-<tr>
-      <td>10</td>
       <td><strong>VAMO3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
       <td>5.25</td>
@@ -351,40 +297,68 @@
       <td style="color:#c00">-42.79%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-33.25%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,46</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>42</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>7</td>
+      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
+      <td>1.97</td>
+      <td>14.37 <span class="badge badge-orange">juros&#8593;</span></td>
+      <td>0.28</td>
+      <td style="color:#c00">-21.69%</td>
+      <td style="color:#c00">-9.54%</td>
+      <td style="color:#c00;font-weight:bold">-12.14%</td>
+      <td>+0.8%<br><small style="color:#999">28/10/2026 R$ 1,29</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>8</td>
+      <td><strong>TEND3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Construção Civil</td>
+      <td>3.30</td>
+      <td>4.24</td>
+      <td>1.59</td>
+      <td style="color:#c00">-24.69%</td>
+      <td style="color:#c00">-9.54%</td>
+      <td style="color:#c00;font-weight:bold">-15.15%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 20,34</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td>9</td>
+      <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Comércio e Distribuição</td>
+      <td>3.46</td>
+      <td>5.47</td>
+      <td>0.53</td>
+      <td style="color:#c00">-25.80%</td>
+      <td style="color:#c00">-9.54%</td>
+      <td style="color:#c00;font-weight:bold">-16.25%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,56</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>10</td>
+      <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Alimentos Processados</td>
+      <td>4.46</td>
+      <td>5.56</td>
+      <td>1.62</td>
+      <td style="color:#c00">-31.73%</td>
+      <td style="color:#c00">-9.54%</td>
+      <td style="color:#c00;font-weight:bold">-22.18%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,69</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>11</td>
-      <td><strong>VTRU3</strong> <span class="badge badge-orange">~Mín52s</span></td>
-      <td>Diversos</td>
-      <td>3.35</td>
-      <td>1.61</td>
-      <td>0.44</td>
-      <td style="color:#c00">-22.89%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-13.35%</td>
-      <td>+5.8%</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>45</td>
-    </tr>
-<tr>
-      <td>12</td>
-      <td><strong>ESPA3</strong></td>
-      <td>Comércio</td>
-      <td>5.12</td>
-      <td>22.05</td>
-      <td>0.20</td>
-      <td style="color:#c00">-38.45%</td>
-      <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-28.91%</td>
-      <td>+540.3%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>45</td>
-    </tr>
-<tr>
-      <td>13</td>
       <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Exploração de Imóveis</td>
       <td>4.73</td>
@@ -393,12 +367,12 @@
       <td style="color:#c00">-32.71%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-23.17%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,81</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>46</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td>14</td>
+      <td>12</td>
       <td><strong>MOVI3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
       <td>5.47</td>
@@ -407,26 +381,26 @@
       <td style="color:#c00">-41.30%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-31.76%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-gray">1/3</span></td>
-      <td>47</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 5,87</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td>15</td>
-      <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Comércio</td>
-      <td>2.14</td>
-      <td>6.05</td>
-      <td>0.87</td>
-      <td style="color:#c00">-19.14%</td>
+      <td>13</td>
+      <td><strong>VTRU3</strong> <span class="badge badge-orange">~Mín52s</span></td>
+      <td>Diversos</td>
+      <td>3.35</td>
+      <td>1.61</td>
+      <td>0.44</td>
+      <td style="color:#c00">-22.89%</td>
       <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-9.59%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>49</td>
+      <td style="color:#c00;font-weight:bold">-13.35%</td>
+      <td>+5.8%<br><small style="color:#999">24/10/2025 R$ 10,98</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
-      <td>16</td>
+      <td>14</td>
       <td><strong>SBFG3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>5.55</td>
@@ -435,12 +409,26 @@
       <td style="color:#c00">-39.53%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-29.99%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,94</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>50</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td>17</td>
+      <td>15</td>
+      <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Comércio</td>
+      <td>2.14</td>
+      <td>6.05 <span class="badge badge-orange">juros&#8593;</span></td>
+      <td>0.87</td>
+      <td style="color:#c00">-19.14%</td>
+      <td style="color:#c00">-9.54%</td>
+      <td style="color:#c00;font-weight:bold">-9.59%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 9,38</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>16</td>
       <td><strong>JHSF3</strong></td>
       <td>Construção Civil</td>
       <td>4.18</td>
@@ -449,9 +437,23 @@
       <td style="color:#c00">-25.83%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-16.29%</td>
-      <td>+40.1%</td>
+      <td>+40.1%<br><small style="color:#999">24/10/2025 R$ 6,21</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>51</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td>17</td>
+      <td><strong>MGLU3</strong></td>
+      <td>Comércio</td>
+      <td>4.95</td>
+      <td>46.90 <span class="badge badge-orange">juros&#8593;</span></td>
+      <td>0.37</td>
+      <td style="color:#c00">-31.23%</td>
+      <td style="color:#c00">-9.54%</td>
+      <td style="color:#c00;font-weight:bold">-21.69%</td>
+      <td>+32.2%<br><small style="color:#999">20/08/2026 R$ 3,88</small></td>
+      <td><span class="badge badge-gray">1/3</span></td>
+      <td><span class="badge badge-red">&#128308; 3</span></td>
     </tr>
 <tr>
       <td>18</td>
@@ -463,9 +465,9 @@
       <td style="color:#c00">-30.12%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-20.57%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">28/10/2026 R$ 3,55</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>55</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>19</td>
@@ -477,23 +479,23 @@
       <td style="color:#c00">-20.06%</td>
       <td style="color:#c00">-9.54%</td>
       <td style="color:#c00;font-weight:bold">-10.51%</td>
-      <td>+27.4%</td>
+      <td>+27.4%<br><small style="color:#999">17/11/2025 R$ 8,57</small></td>
       <td><span class="badge badge-gray">1/3</span></td>
-      <td>55</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
       <td>20</td>
-      <td><strong>MGLU3</strong></td>
-      <td>Comércio</td>
-      <td>4.95</td>
-      <td>46.90</td>
-      <td>0.37</td>
-      <td style="color:#c00">-31.23%</td>
+      <td><strong>USIM5</strong> <span class="badge badge-orange">~Mín52s</span></td>
+      <td>Siderurgia e Metalurgia</td>
+      <td>4.07</td>
+      <td>4.32</td>
+      <td>0.30</td>
+      <td style="color:#c00">-21.97%</td>
       <td style="color:#c00">-9.54%</td>
-      <td style="color:#c00;font-weight:bold">-21.69%</td>
-      <td>+32.2%</td>
-      <td><span class="badge badge-gray">1/3</span></td>
-      <td>55</td>
+      <td style="color:#c00;font-weight:bold">-12.42%</td>
+      <td>+10.7%<br><small style="color:#999">24/10/2025 R$ 4,94</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr></tbody>
   </table>
   
@@ -503,7 +505,7 @@
       <th>#</th><th>Ticker</th><th>Setor</th>
       <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
-      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Score</th>
+      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
     <tbody><tr>
       <td>1</td>
@@ -515,9 +517,9 @@
       <td style="color:#c00">-36.92%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-32.19%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,51</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>5</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>2</td>
@@ -529,9 +531,9 @@
       <td style="color:#c00">-36.48%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-31.75%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 15,53</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>11</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>3</td>
@@ -543,9 +545,9 @@
       <td style="color:#c00">-38.55%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-33.82%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 20,34</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>11</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>4</td>
@@ -557,9 +559,9 @@
       <td style="color:#c00">-30.00%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-25.27%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,61</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>25</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>5</td>
@@ -571,9 +573,9 @@
       <td style="color:#c00">-27.48%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-22.75%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,56</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>26</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>6</td>
@@ -585,9 +587,9 @@
       <td style="color:#c00">-20.19%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-15.46%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 6,64</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>34</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>7</td>
@@ -599,23 +601,23 @@
       <td style="color:#c00">-25.99%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-21.26%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 8,23</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>35</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>8</td>
-      <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Alimentos Processados</td>
-      <td>4.46</td>
-      <td>5.56</td>
-      <td>1.62</td>
-      <td style="color:#c00">-29.58%</td>
+      <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Exploração de Imóveis</td>
+      <td>4.73</td>
+      <td>4.98</td>
+      <td>0.10</td>
+      <td style="color:#c00">-33.94%</td>
       <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-24.85%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>36</td>
+      <td style="color:#c00;font-weight:bold">-29.21%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,81</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>9</td>
@@ -627,51 +629,51 @@
       <td style="color:#c00">-26.77%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-22.04%</td>
-      <td>+10.7%</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>37</td>
+      <td>+10.7%<br><small style="color:#999">24/10/2025 R$ 4,94</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>10</td>
-      <td><strong>HBRE3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Exploração de Imóveis</td>
-      <td>4.73</td>
-      <td>4.98</td>
-      <td>0.10</td>
-      <td style="color:#c00">-33.94%</td>
+      <td><strong>BEEF3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Alimentos Processados</td>
+      <td>4.46</td>
+      <td>5.56</td>
+      <td>1.62</td>
+      <td style="color:#c00">-29.58%</td>
       <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-29.21%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>37</td>
+      <td style="color:#c00;font-weight:bold">-24.85%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,69</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>11</td>
-      <td><strong>USIM3</strong> <span class="badge badge-orange">~Mín52s</span></td>
-      <td>Siderurgia e Metalurgia</td>
-      <td>3.96</td>
-      <td>4.21</td>
-      <td>0.29</td>
-      <td style="color:#c00">-21.57%</td>
+      <td><strong>SBFG3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Comércio</td>
+      <td>5.55</td>
+      <td>2.63</td>
+      <td>0.34</td>
+      <td style="color:#c00">-39.98%</td>
       <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-16.84%</td>
-      <td>+10.0%</td>
-      <td><span class="badge badge-gray">1/3</span></td>
-      <td>43</td>
+      <td style="color:#c00;font-weight:bold">-35.24%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,94</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>12</td>
       <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
       <td>1.97</td>
-      <td>14.37</td>
+      <td>14.37 <span class="badge badge-orange">juros&#8593;</span></td>
       <td>0.28</td>
       <td style="color:#c00">-15.58%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-10.85%</td>
-      <td>+0.8%</td>
+      <td>+0.8%<br><small style="color:#999">28/10/2026 R$ 1,29</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>45</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>13</td>
@@ -683,54 +685,12 @@
       <td style="color:#c00">-17.35%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-12.62%</td>
-      <td>+5.8%</td>
+      <td>+5.8%<br><small style="color:#999">24/10/2025 R$ 10,98</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>46</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
       <td>14</td>
-      <td><strong>SBFG3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Comércio</td>
-      <td>5.55</td>
-      <td>2.63</td>
-      <td>0.34</td>
-      <td style="color:#c00">-39.98%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-35.24%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>46</td>
-    </tr>
-<tr>
-      <td>15</td>
-      <td><strong>ESPA3</strong></td>
-      <td>Comércio</td>
-      <td>5.12</td>
-      <td>22.05</td>
-      <td>0.20</td>
-      <td style="color:#c00">-32.50%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-27.77%</td>
-      <td>+540.3%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>46</td>
-    </tr>
-<tr>
-      <td>16</td>
-      <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Comércio</td>
-      <td>2.14</td>
-      <td>6.05</td>
-      <td>0.87</td>
-      <td style="color:#c00">-13.94%</td>
-      <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-9.21%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>51</td>
-    </tr>
-<tr>
-      <td>17</td>
       <td><strong>SYNE3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Exploração de Imóveis</td>
       <td>4.95</td>
@@ -739,26 +699,26 @@
       <td style="color:#c00">-26.83%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-22.10%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,70</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>52</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td>18</td>
-      <td><strong>JHSF3</strong></td>
-      <td>Construção Civil</td>
-      <td>4.18</td>
-      <td>2.88</td>
-      <td>0.82</td>
-      <td style="color:#c00">-20.18%</td>
+      <td>15</td>
+      <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Comércio</td>
+      <td>2.14</td>
+      <td>6.05 <span class="badge badge-orange">juros&#8593;</span></td>
+      <td>0.87</td>
+      <td style="color:#c00">-13.94%</td>
       <td style="color:#c00">-4.73%</td>
-      <td style="color:#c00;font-weight:bold">-15.45%</td>
-      <td>+40.1%</td>
+      <td style="color:#c00;font-weight:bold">-9.21%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 9,38</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>53</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td>19</td>
+      <td>16</td>
       <td><strong>GMAT3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio e Distribuição</td>
       <td>4.84</td>
@@ -767,12 +727,26 @@
       <td style="color:#c00">-23.33%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-18.59%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">28/10/2026 R$ 3,55</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>54</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
-      <td>20</td>
+      <td>17</td>
+      <td><strong>JHSF3</strong></td>
+      <td>Construção Civil</td>
+      <td>4.18</td>
+      <td>2.88</td>
+      <td>0.82</td>
+      <td style="color:#c00">-20.18%</td>
+      <td style="color:#c00">-4.73%</td>
+      <td style="color:#c00;font-weight:bold">-15.45%</td>
+      <td>+40.1%<br><small style="color:#999">24/10/2025 R$ 6,21</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
+    </tr>
+<tr>
+      <td>18</td>
       <td><strong>VLID3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Serviços Diversos</td>
       <td>3.53</td>
@@ -781,9 +755,37 @@
       <td style="color:#c00">-15.22%</td>
       <td style="color:#c00">-4.73%</td>
       <td style="color:#c00;font-weight:bold">-10.49%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 14,20</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>58</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td>19</td>
+      <td><strong>VALE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Mineração</td>
+      <td>5.23</td>
+      <td>125.83 <span class="badge badge-orange">juros&#8593;</span></td>
+      <td>1.41</td>
+      <td style="color:#c00">-22.86%</td>
+      <td style="color:#c00">-4.73%</td>
+      <td style="color:#c00;font-weight:bold">-18.13%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 60,05</small></td>
+      <td><span class="badge badge-gray">1/3</span></td>
+      <td><span class="badge badge-red">&#128308; 3</span></td>
+    </tr>
+<tr>
+      <td>20</td>
+      <td><strong>CURY3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Construção Civil</td>
+      <td>4.75</td>
+      <td>7.26</td>
+      <td>4.82</td>
+      <td style="color:#c00">-19.75%</td>
+      <td style="color:#c00">-4.73%</td>
+      <td style="color:#c00;font-weight:bold">-15.02%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 26,16</small></td>
+      <td><span class="badge badge-gray">1/3</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr></tbody>
   </table>
   
@@ -793,7 +795,7 @@
       <th>#</th><th>Ticker</th><th>Setor</th>
       <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
-      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Score</th>
+      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
     <tbody><tr>
       <td>1</td>
@@ -805,9 +807,9 @@
       <td style="color:#c00">-38.72%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-33.86%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,51</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>6</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>2</td>
@@ -819,23 +821,23 @@
       <td style="color:#c00">-37.15%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-32.29%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 15,53</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>13</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>3</td>
       <td><strong>LREN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>2.14</td>
-      <td>6.05</td>
+      <td>6.05 <span class="badge badge-orange">juros&#8593;</span></td>
       <td>0.87</td>
       <td style="color:#c00">-31.03%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-26.17%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 9,38</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>14</td>
+      <td><span class="badge badge-red">&#128308; 3</span></td>
     </tr>
 <tr>
       <td>4</td>
@@ -847,9 +849,9 @@
       <td style="color:#c00">-29.66%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-24.80%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 6,64</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>17</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>5</td>
@@ -861,9 +863,9 @@
       <td style="color:#c00">-32.94%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-28.08%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 20,34</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>17</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>6</td>
@@ -875,9 +877,9 @@
       <td style="color:#c00">-29.39%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-24.52%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 1,61</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>29</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>7</td>
@@ -889,9 +891,9 @@
       <td style="color:#c00">-27.49%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-22.63%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 8,23</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>34</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>8</td>
@@ -903,12 +905,26 @@
       <td style="color:#c00">-25.68%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-20.82%</td>
-      <td>+10.7%</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>41</td>
+      <td>+10.7%<br><small style="color:#999">24/10/2025 R$ 4,94</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>9</td>
+      <td><strong>SYNE3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Exploração de Imóveis</td>
+      <td>4.95</td>
+      <td>7.54</td>
+      <td>0.59</td>
+      <td style="color:#c00">-33.99%</td>
+      <td style="color:#c00">-4.86%</td>
+      <td style="color:#c00;font-weight:bold">-29.12%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,70</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>10</td>
       <td><strong>VLID3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Serviços Diversos</td>
       <td>3.53</td>
@@ -917,40 +933,12 @@
       <td style="color:#c00">-22.28%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-17.41%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 14,20</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>41</td>
-    </tr>
-<tr>
-      <td>10</td>
-      <td><strong>POMO3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Material de Transporte</td>
-      <td>4.58</td>
-      <td>3.70</td>
-      <td>1.05</td>
-      <td style="color:#c00">-27.96%</td>
-      <td style="color:#c00">-4.86%</td>
-      <td style="color:#c00;font-weight:bold">-23.10%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-gray">1/3</span></td>
-      <td>42</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
       <td>11</td>
-      <td><strong>ESPA3</strong></td>
-      <td>Comércio</td>
-      <td>5.12</td>
-      <td>22.05</td>
-      <td>0.20</td>
-      <td style="color:#c00">-42.80%</td>
-      <td style="color:#c00">-4.86%</td>
-      <td style="color:#c00;font-weight:bold">-37.94%</td>
-      <td>+540.3%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>42</td>
-    </tr>
-<tr>
-      <td>12</td>
       <td><strong>RIAA3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>4.01</td>
@@ -959,9 +947,23 @@
       <td style="color:#c00">-23.27%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-18.41%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 6,10</small></td>
       <td><span class="badge badge-gray">1/3</span></td>
-      <td>43</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
+    </tr>
+<tr>
+      <td>12</td>
+      <td><strong>POMO4</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Material de Transporte</td>
+      <td>4.72</td>
+      <td>3.85</td>
+      <td>1.09</td>
+      <td style="color:#c00">-28.44%</td>
+      <td style="color:#c00">-4.86%</td>
+      <td style="color:#c00;font-weight:bold">-23.57%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 3,80</small></td>
+      <td><span class="badge badge-gray">1/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>13</td>
@@ -973,40 +975,12 @@
       <td style="color:#c00">-26.50%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-21.64%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,69</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>43</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
       <td>14</td>
-      <td><strong>SYNE3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Exploração de Imóveis</td>
-      <td>4.95</td>
-      <td>7.54</td>
-      <td>0.59</td>
-      <td style="color:#c00">-33.99%</td>
-      <td style="color:#c00">-4.86%</td>
-      <td style="color:#c00;font-weight:bold">-29.12%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-orange">2/3</span></td>
-      <td>44</td>
-    </tr>
-<tr>
-      <td>15</td>
-      <td><strong>POMO4</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Material de Transporte</td>
-      <td>4.72</td>
-      <td>3.85</td>
-      <td>1.09</td>
-      <td style="color:#c00">-28.44%</td>
-      <td style="color:#c00">-4.86%</td>
-      <td style="color:#c00;font-weight:bold">-23.57%</td>
-      <td>+0.0%</td>
-      <td><span class="badge badge-gray">1/3</span></td>
-      <td>45</td>
-    </tr>
-<tr>
-      <td>16</td>
       <td><strong>SBFG3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio</td>
       <td>5.55</td>
@@ -1015,12 +989,26 @@
       <td style="color:#c00">-47.72%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-42.86%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 4,94</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>47</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr>
 <tr>
-      <td>17</td>
+      <td>15</td>
+      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
+      <td>1.97</td>
+      <td>14.37 <span class="badge badge-orange">juros&#8593;</span></td>
+      <td>0.28</td>
+      <td style="color:#c00">-15.03%</td>
+      <td style="color:#c00">-4.86%</td>
+      <td style="color:#c00;font-weight:bold">-10.17%</td>
+      <td>+0.8%<br><small style="color:#999">28/10/2026 R$ 1,29</small></td>
+      <td><span class="badge badge-red">3/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>16</td>
       <td><strong>PGMN3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Comércio e Distribuição</td>
       <td>3.46</td>
@@ -1029,26 +1017,12 @@
       <td style="color:#c00">-19.50%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-14.63%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,56</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>51</td>
+      <td><span class="badge badge-green">&#128994; 1</span></td>
     </tr>
 <tr>
-      <td>18</td>
-      <td><strong>QUAL3</strong> <span class="badge badge-red">Mín52s</span></td>
-      <td>Serv.Méd.Hospit. Análises e Diagnósticos</td>
-      <td>1.97</td>
-      <td>14.37</td>
-      <td>0.28</td>
-      <td style="color:#c00">-15.03%</td>
-      <td style="color:#c00">-4.86%</td>
-      <td style="color:#c00;font-weight:bold">-10.17%</td>
-      <td>+0.8%</td>
-      <td><span class="badge badge-red">3/3</span></td>
-      <td>53</td>
-    </tr>
-<tr>
-      <td>19</td>
+      <td>17</td>
       <td><strong>JHSF3</strong></td>
       <td>Construção Civil</td>
       <td>4.18</td>
@@ -1057,12 +1031,12 @@
       <td style="color:#c00">-21.34%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-16.48%</td>
-      <td>+40.1%</td>
+      <td>+40.1%<br><small style="color:#999">24/10/2025 R$ 6,21</small></td>
       <td><span class="badge badge-red">3/3</span></td>
-      <td>54</td>
+      <td><span class="badge badge-green">&#128994; 0</span></td>
     </tr>
 <tr>
-      <td>20</td>
+      <td>18</td>
       <td><strong>VAMO3</strong> <span class="badge badge-red">Mín52s</span></td>
       <td>Diversos</td>
       <td>5.25</td>
@@ -1071,12 +1045,40 @@
       <td style="color:#c00">-26.35%</td>
       <td style="color:#c00">-4.86%</td>
       <td style="color:#c00;font-weight:bold">-21.49%</td>
-      <td>+0.0%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 2,46</small></td>
       <td><span class="badge badge-orange">2/3</span></td>
-      <td>59</td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>19</td>
+      <td><strong>MOVI3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Diversos</td>
+      <td>5.47</td>
+      <td>4.63</td>
+      <td>0.57</td>
+      <td style="color:#c00">-25.51%</td>
+      <td style="color:#c00">-4.86%</td>
+      <td style="color:#c00;font-weight:bold">-20.65%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 5,87</small></td>
+      <td><span class="badge badge-orange">2/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
+    </tr>
+<tr>
+      <td>20</td>
+      <td><strong>EVEN3</strong> <span class="badge badge-red">Mín52s</span></td>
+      <td>Construção Civil</td>
+      <td>6.24</td>
+      <td>3.18</td>
+      <td>0.33</td>
+      <td style="color:#c00">-30.85%</td>
+      <td style="color:#c00">-4.86%</td>
+      <td style="color:#c00;font-weight:bold">-25.99%</td>
+      <td>+0.0%<br><small style="color:#999">29/10/2026 R$ 3,34</small></td>
+      <td><span class="badge badge-gray">1/3</span></td>
+      <td><span class="badge badge-orange">&#128993; 2</span></td>
     </tr></tbody>
   </table>
 
-  <footer>Gerado em 30/10/2026, 23:09:36 · quant-b3 · Não é recomendação de investimento.</footer>
+  <footer>Gerado em 30/10/2026, 23:41:01 · quant-b3 · Não é recomendação de investimento.</footer>
 </body>
 </html>

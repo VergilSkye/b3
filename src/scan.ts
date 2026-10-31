@@ -13,6 +13,8 @@ const SCAN_HTML = join("docs", "scan", "index.html");
 const LIQUIDEZ_MIN = 1_000_000;
 const TOP_N = 20;
 const NEAR_MIN52W_THRESHOLD = 0.15; // badge "~Mín52s" se dentro de 15%
+const CORP_EVENT_THRESHOLD = 2.0; // ↑ Mín52s > 200% → excluir como evento corporativo
+const ALAV_THRESHOLD = 2.5; // P/L / EV/EBIT > 2.5 → "juros consomem lucro"
 
 // ── Helpers de data ──────────────────────────────────────────────────────────
 
@@ -35,12 +37,48 @@ function subtractDays(isoDate: string, days: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
+/** Converte "YYYYMMDD" → "DD/MM/YYYY" */
+function fmtDate(yyyymmdd: string): string {
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
+}
+
 // ── Candidatos ───────────────────────────────────────────────────────────────
 
 interface Candidate extends RawStock {
   liquidezMedia: number;
   evEbit: number;
   pl: number;
+}
+
+// ── Dedupe por raiz do ticker ─────────────────────────────────────────────────
+
+/** Raiz = primeiros 4 caracteres do ticker (ex. USIM3 → USIM). */
+function dedupeByRoot(candidates: Candidate[]): Candidate[] {
+  const byRoot = new Map<string, Candidate>();
+  for (const c of candidates) {
+    const root = c.ticker.slice(0, 4);
+    const existing = byRoot.get(root);
+    if (!existing || (c.liquidezMedia ?? 0) > (existing.liquidezMedia ?? 0)) {
+      byRoot.set(root, c);
+    }
+  }
+  return [...byRoot.values()];
+}
+
+// ── Knife score ───────────────────────────────────────────────────────────────
+
+function calcKnifScore(
+  pctAboveMin52w: number | null,
+  alav: number | null,
+  pl: number,
+  retornoStock: number,
+): number {
+  let s = 0;
+  if (pctAboveMin52w !== null && pctAboveMin52w <= 0.05) s++; // na mínima de 52s
+  if (alav !== null && alav > ALAV_THRESHOLD) s++; // juros consomem lucro
+  if (pl > 15) s++; // P/L alto → margem estreita / resultado volátil
+  if (retornoStock < -0.25) s++; // queda forte na janela
+  return s;
 }
 
 // ── Ranking por janela ────────────────────────────────────────────────────────
@@ -50,6 +88,7 @@ function rankWindow(
   priceToday: Map<string, number>,
   priceRef: Map<string, number>,
   low52w: Map<string, number>,
+  low52wDate: Map<string, string>,
 ): Omit<ScanEntry, "janelas">[] {
   const bovaToday = priceToday.get("BOVA11");
   const bovaRef = priceRef.get("BOVA11");
@@ -57,9 +96,9 @@ function rankWindow(
 
   const retornoBovaPeriod = bovaToday / bovaRef - 1;
 
-  // Computar retornos individuais
   type Item = Omit<ScanEntry, "janelas"> & { score: number };
   const items: Item[] = [];
+
   for (const c of candidates) {
     const p0 = priceRef.get(c.ticker);
     const p1 = priceToday.get(c.ticker);
@@ -70,6 +109,12 @@ function rankWindow(
 
     const low = low52w.get(c.ticker);
     const pctAboveMin52w = low && low > 0 ? p1 / low - 1 : null;
+    const lowDateRaw = low52wDate.get(c.ticker);
+    const low52wDateFmt = lowDateRaw ? fmtDate(lowDateRaw) : null;
+    const low52wPrice = low ?? null;
+
+    const alav = c.pl > 0 && c.evEbit > 0 ? c.pl / c.evEbit : null;
+    const ks = calcKnifScore(pctAboveMin52w, alav, c.pl, retornoStock);
 
     items.push({
       rank: 0,
@@ -82,6 +127,10 @@ function rankWindow(
       retornoBova: retornoBovaPeriod,
       quedaRelativa,
       pctAboveMin52w,
+      low52wDate: low52wDateFmt,
+      low52wPrice,
+      alav,
+      knifScore: ks,
       score: 0,
     });
   }
@@ -154,7 +203,7 @@ async function main() {
 
   // 2. Carregar todos os price maps em um único pass do COTAHIST
   console.log("Carregando price maps (pass único do COTAHIST)...");
-  const { priceToday, price30d, price60d, price90d, low52w } = await buildScanPriceMaps(
+  const { priceToday, price30d, price60d, price90d, low52w, low52wDate } = await buildScanPriceMaps(
     dateToday,
     date30d,
     date60d,
@@ -181,21 +230,46 @@ async function main() {
     a.setor === "Outros" && setorMap[a.ticker] ? { ...a, setor: setorMap[a.ticker] as string } : a,
   );
 
-  // 4. Filtrar candidatos — excluir financeiras (têm EV/EBIT=null, métricas diferentes)
-  const candidates: Candidate[] = rawAcoes.flatMap((a) => {
-    if (isFinanceira(a.setor)) return []; // ranking separado; EV/EBIT não se aplica
+  // 4. Filtrar candidatos — excluir financeiras
+  const rawCandidates: Candidate[] = rawAcoes.flatMap((a) => {
+    if (isFinanceira(a.setor)) return [];
     if ((a.liquidezMedia ?? 0) < LIQUIDEZ_MIN) return [];
     if (a.evEbit === null || a.evEbit <= 0) return [];
     if (a.pl === null || a.pl <= 0) return [];
     return [{ ...a, liquidezMedia: a.liquidezMedia as number, evEbit: a.evEbit, pl: a.pl }];
   });
-  console.log(`  ${candidates.length} candidatos após filtros (financeiras excluídas)\n`);
 
-  // 5. Rankear por janela
+  // 5. Dedupe por raiz do ticker — manter o mais líquido
+  const candidates = dedupeByRoot(rawCandidates);
+  console.log(
+    `  ${rawCandidates.length} candidatos → ${candidates.length} após dedupe por empresa (financeiras excluídas)\n`,
+  );
+
+  // 6. Detectar eventos corporativos não ajustados (↑ Mín52s > 200%)
+  const corporateEvents: Array<{ ticker: string; setor: string; pctAboveMin52w: number }> = [];
+  const cleanCandidates = candidates.filter((c) => {
+    const p1 = priceToday.get(c.ticker);
+    const low = low52w.get(c.ticker);
+    if (p1 && low && low > 0) {
+      const ratio = p1 / low - 1;
+      if (ratio > CORP_EVENT_THRESHOLD) {
+        corporateEvents.push({ ticker: c.ticker, setor: c.setor, pctAboveMin52w: ratio });
+        return false;
+      }
+    }
+    return true;
+  });
+  if (corporateEvents.length > 0) {
+    console.log(
+      `  ⚠  Eventos corporativos detectados (excluídos): ${corporateEvents.map((e) => e.ticker).join(", ")}`,
+    );
+  }
+
+  // 7. Rankear por janela
   console.log("Rankeando candidatos...");
-  const raw30d = rankWindow(candidates, priceToday, price30d, low52w);
-  const raw60d = rankWindow(candidates, priceToday, price60d, low52w);
-  const raw90d = rankWindow(candidates, priceToday, price90d, low52w);
+  const raw30d = rankWindow(cleanCandidates, priceToday, price30d, low52w, low52wDate);
+  const raw60d = rankWindow(cleanCandidates, priceToday, price60d, low52w, low52wDate);
+  const raw90d = rankWindow(cleanCandidates, priceToday, price90d, low52w, low52wDate);
 
   const { top30d, top60d, top90d } = attachJanelas(raw30d, raw60d, raw90d);
 
@@ -209,7 +283,7 @@ async function main() {
   console.log(`  90d: ${top90d.length} candidatos`);
   console.log(`  Consenso (2+/3 janelas): ${uniqConsenso.join(", ") || "nenhum"}\n`);
 
-  // 6. Exibir top-5 de cada janela + sinalizadores
+  // 8. Exibir top-5 de cada janela + sinalizadores
   for (const [label, list] of [
     ["30d", top30d],
     ["60d", top60d],
@@ -219,17 +293,18 @@ async function main() {
     for (const e of list.slice(0, 5)) {
       const min52w =
         e.pctAboveMin52w !== null
-          ? `+${(e.pctAboveMin52w * 100).toFixed(1)}% acima mín`
+          ? `+${(e.pctAboveMin52w * 100).toFixed(1)}% acima mín (${e.low52wDate ?? "?"} R$${e.low52wPrice?.toFixed(2) ?? "?"})`
           : "mín52s=?";
       const janelasMark = e.janelas === 3 ? "★★★" : e.janelas === 2 ? "★★" : "★";
+      const alavStr = e.alav !== null ? `  alav=${e.alav.toFixed(1)}` : "";
       console.log(
-        `  ${e.rank}. ${e.ticker.padEnd(7)} qrel=${(e.quedaRelativa * 100).toFixed(1)}%  EV/EBIT=${e.evEbit.toFixed(2)}  ${min52w}  ${janelasMark}  score=${e.score}`,
+        `  ${e.rank}. ${e.ticker.padEnd(7)} qrel=${(e.quedaRelativa * 100).toFixed(1)}%  EV/EBIT=${e.evEbit.toFixed(2)}  ${min52w}  ${janelasMark}  risco=${e.knifScore}${alavStr}`,
       );
     }
     console.log("");
   }
 
-  // 7. Verificar se algum candidato tem pctAboveMin52w ≤ NEAR_MIN52W_THRESHOLD
+  // 9. Listar candidatos perto da mínima de 52 semanas
   const near52wList = [...top30d, ...top60d, ...top90d]
     .filter((e, i, arr) => arr.findIndex((x) => x.ticker === e.ticker) === i)
     .filter((e) => e.pctAboveMin52w !== null && e.pctAboveMin52w <= NEAR_MIN52W_THRESHOLD)
@@ -239,14 +314,17 @@ async function main() {
     console.log(`Atenção — perto da mínima de 52 semanas (<= ${NEAR_MIN52W_THRESHOLD * 100}%):`);
     for (const e of near52wList) {
       console.log(
-        `  ${e.ticker.padEnd(7)} +${((e.pctAboveMin52w ?? 0) * 100).toFixed(1)}% acima mín`,
+        `  ${e.ticker.padEnd(7)} +${((e.pctAboveMin52w ?? 0) * 100).toFixed(1)}% acima mín (${e.low52wDate ?? "?"} R$${e.low52wPrice?.toFixed(2) ?? "?"})`,
       );
     }
     console.log("");
   }
 
-  // 8. Gerar HTML
-  gravarScanHtml({ dateToday, date30d, date60d, date90d, top30d, top60d, top90d }, SCAN_HTML);
+  // 10. Gerar HTML
+  gravarScanHtml(
+    { dateToday, date30d, date60d, date90d, top30d, top60d, top90d, corporateEvents },
+    SCAN_HTML,
+  );
   console.log(`HTML gerado em ${SCAN_HTML}`);
 }
 

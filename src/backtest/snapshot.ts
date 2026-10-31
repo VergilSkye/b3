@@ -309,6 +309,7 @@ export interface ScanPriceMaps {
   price60d: Map<string, number>;
   price90d: Map<string, number>;
   low52w: Map<string, number>; // mínimo de fechamento nos últimos 252 pregões
+  low52wDate: Map<string, string>; // data "YYYYMMDD" da mínima de 52 semanas
 }
 
 /** Retorna último fechamento ≤ date para o ticker (bars ordenados asc). */
@@ -352,6 +353,7 @@ export async function buildScanPriceMaps(
   const price60d = new Map<string, number>();
   const price90d = new Map<string, number>();
   const low52w = new Map<string, number>();
+  const low52wDate = new Map<string, string>();
 
   for (const [ticker, bars] of barMap) {
     if (bars.length === 0) continue;
@@ -368,9 +370,19 @@ export async function buildScanPriceMaps(
     if (p90 !== null) price90d.set(ticker, p90);
 
     const recent = bars.slice(-TRADING_DAYS_12M);
-    const low = Math.min(...recent.map((b) => b.close));
-    if (Number.isFinite(low)) low52w.set(ticker, low);
+    let lowPrice = Number.POSITIVE_INFINITY;
+    let lowDateStr = "";
+    for (const b of recent) {
+      if (b.close < lowPrice) {
+        lowPrice = b.close;
+        lowDateStr = b.date;
+      }
+    }
+    if (Number.isFinite(lowPrice) && lowDateStr) {
+      low52w.set(ticker, lowPrice);
+      low52wDate.set(ticker, lowDateStr);
+    }
   }
 
-  return { priceToday, price30d, price60d, price90d, low52w };
+  return { priceToday, price30d, price60d, price90d, low52w, low52wDate };
 }

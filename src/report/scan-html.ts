@@ -9,11 +9,15 @@ export interface ScanEntry {
   evEbit: number;
   pl: number;
   pvp: number | null;
-  quedaRelativa: number;
   retornoStock: number;
   retornoBova: number;
-  score: number;
+  quedaRelativa: number;
   pctAboveMin52w: number | null; // % acima da mínima de 52 semanas (0 = na mínima)
+  low52wDate: string | null; // "DD/MM/YYYY"
+  low52wPrice: number | null; // R$
+  alav: number | null; // P/L / EV/EBIT
+  knifScore: number; // 0–4 pontos de risco
+  score: number;
   janelas: number; // em quantas janelas (30/60/90d) o ticker aparece: 1, 2 ou 3
 }
 
@@ -25,10 +29,15 @@ export interface ScanResult {
   top30d: ScanEntry[];
   top60d: ScanEntry[];
   top90d: ScanEntry[];
+  corporateEvents: Array<{ ticker: string; setor: string; pctAboveMin52w: number }>;
 }
 
 function pct(v: number, digits = 2): string {
   return `${(v * 100).toFixed(digits)}%`;
+}
+
+function fmtBRL(v: number): string {
+  return `R$\u00a0${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function near52wBadge(e: ScanEntry): string {
@@ -44,6 +53,17 @@ function janelasBadge(n: number): string {
   return '<span class="badge badge-gray">1/3</span>';
 }
 
+function knifScoreBadge(score: number): string {
+  if (score >= 3) return `<span class="badge badge-red">&#128308; ${score}</span>`;
+  if (score === 2) return `<span class="badge badge-orange">&#128993; ${score}</span>`;
+  return `<span class="badge badge-green">&#128994; ${score}</span>`;
+}
+
+function alavBadge(alav: number | null): string {
+  if (alav === null || alav <= 2.5) return "";
+  return ` <span class="badge badge-orange">juros&#8593;</span>`;
+}
+
 function tableHtml(entries: ScanEntry[], window: string, refDate: string): string {
   if (entries.length === 0) return `<p>Sem candidatos para janela ${window}.</p>`;
 
@@ -54,14 +74,14 @@ function tableHtml(entries: ScanEntry[], window: string, refDate: string): strin
       <td><strong>${e.ticker}</strong>${near52wBadge(e)}</td>
       <td>${e.setor}</td>
       <td>${e.evEbit.toFixed(2)}</td>
-      <td>${e.pl.toFixed(2)}</td>
+      <td>${e.pl.toFixed(2)}${alavBadge(e.alav)}</td>
       <td>${e.pvp !== null ? e.pvp.toFixed(2) : "—"}</td>
       <td style="color:${e.retornoStock < 0 ? "#c00" : "#080"}">${pct(e.retornoStock)}</td>
       <td style="color:${e.retornoBova < 0 ? "#c00" : "#080"}">${pct(e.retornoBova)}</td>
       <td style="color:#c00;font-weight:bold">${pct(e.quedaRelativa)}</td>
-      <td>${e.pctAboveMin52w !== null ? `+${pct(e.pctAboveMin52w, 1)}` : "—"}</td>
+      <td>${e.pctAboveMin52w !== null ? `+${pct(e.pctAboveMin52w, 1)}` : "—"}<br><small style="color:#999">${e.low52wDate ?? ""} ${e.low52wPrice !== null ? fmtBRL(e.low52wPrice) : ""}</small></td>
       <td>${janelasBadge(e.janelas)}</td>
-      <td>${e.score}</td>
+      <td>${knifScoreBadge(e.knifScore)}</td>
     </tr>`,
     )
     .join("\n");
@@ -73,14 +93,26 @@ function tableHtml(entries: ScanEntry[], window: string, refDate: string): strin
       <th>#</th><th>Ticker</th><th>Setor</th>
       <th>EV/EBIT</th><th>P/L</th><th>P/VP</th>
       <th>Retorno ação</th><th>Retorno BOVA11</th>
-      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Score</th>
+      <th>Queda relativa</th><th>↑ Mín52s</th><th>Janelas</th><th>Risco</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
 
+function sectorSummaryHtml(entries: Array<{ setor: string }>): string {
+  const counts = new Map<string, number>();
+  for (const e of entries) counts.set(e.setor, (counts.get(e.setor) ?? 0) + 1);
+  const total = entries.length;
+  if (total === 0) return "";
+  const parts = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([setor, n]) => `<strong>${setor}</strong>: ${((n / total) * 100).toFixed(0)}%`)
+    .join(" &nbsp;·&nbsp; ");
+  return `<p class="sector-summary">Distribuição setorial: ${parts}</p>`;
+}
+
 function consensoHtml(result: ScanResult): string {
-  // Tickers que aparecem em 2+ janelas, ordenados por janelas desc e score médio asc
+  // Agrupa por ticker
   const all = [...result.top30d, ...result.top60d, ...result.top90d];
   const byTicker = new Map<string, ScanEntry[]>();
   for (const e of all) {
@@ -89,37 +121,95 @@ function consensoHtml(result: ScanResult): string {
     byTicker.set(e.ticker, arr);
   }
 
-  const consenso: Array<{ ticker: string; janelas: number; scoreMin: number; entry: ScanEntry }> =
-    [];
+  type ConsensoItem = {
+    ticker: string;
+    janelas: number;
+    scoreMin: number;
+    knifScoreMax: number;
+    entry: ScanEntry;
+  };
+
+  const consenso: ConsensoItem[] = [];
   for (const [ticker, entries] of byTicker) {
     if (entries.length < 2) continue;
     const scoreMin = Math.min(...entries.map((e) => e.score));
-    consenso.push({ ticker, janelas: entries.length, scoreMin, entry: entries[0] as ScanEntry });
+    const knifScoreMax = Math.max(...entries.map((e) => e.knifScore));
+    consenso.push({
+      ticker,
+      janelas: entries.length,
+      scoreMin,
+      knifScoreMax,
+      entry: entries[0] as ScanEntry,
+    });
   }
   consenso.sort((a, b) => b.janelas - a.janelas || a.scoreMin - b.scoreMin);
 
   if (consenso.length === 0) return "";
 
-  const rows = consenso
+  // Limite de 2 por setor
+  const sectorCount = new Map<string, number>();
+  const limited: ConsensoItem[] = [];
+  const excluded: ConsensoItem[] = [];
+  for (const c of consenso) {
+    const n = sectorCount.get(c.entry.setor) ?? 0;
+    if (n < 2) {
+      limited.push(c);
+      sectorCount.set(c.entry.setor, n + 1);
+    } else {
+      excluded.push(c);
+    }
+  }
+
+  const rows = limited
     .map(
       (c) => `<tr>
       <td><strong>${c.ticker}</strong>${near52wBadge(c.entry)}</td>
       <td>${c.entry.setor}</td>
       <td>${c.entry.evEbit.toFixed(2)}</td>
-      <td>${c.entry.pl.toFixed(2)}</td>
+      <td>${c.entry.pl.toFixed(2)}${alavBadge(c.entry.alav)}</td>
       <td>${janelasBadge(c.janelas)}</td>
       <td>${c.entry.pctAboveMin52w !== null ? `+${pct(c.entry.pctAboveMin52w, 1)}` : "—"}</td>
+      <td>${knifScoreBadge(c.knifScoreMax)}</td>
     </tr>`,
     )
     .join("\n");
 
+  const excludedNote =
+    excluded.length > 0
+      ? `<p class="note" style="margin-top:.5rem">Removidos por concentração setorial (&gt;2 por setor): ${excluded.map((c) => c.ticker).join(", ")}</p>`
+      : "";
+
   return `
   <h2>Consenso (2+ janelas)</h2>
   <p>Ações que aparecem em 2 ou 3 das 3 janelas — sinal mais robusto de underperformance relativa persistente.</p>
+  ${sectorSummaryHtml(limited.map((c) => c.entry))}
   <table>
     <thead><tr>
-      <th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Janelas</th><th>↑ Mín52s</th>
+      <th>Ticker</th><th>Setor</th><th>EV/EBIT</th><th>P/L</th><th>Janelas</th><th>↑ Mín52s</th><th>Risco</th>
     </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${excludedNote}`;
+}
+
+function corporateEventsHtml(
+  events: Array<{ ticker: string; setor: string; pctAboveMin52w: number }>,
+): string {
+  if (events.length === 0) return "";
+  const rows = events
+    .map(
+      (e) => `<tr>
+      <td><strong>${e.ticker}</strong></td>
+      <td>${e.setor}</td>
+      <td>+${pct(e.pctAboveMin52w, 0)}</td>
+    </tr>`,
+    )
+    .join("\n");
+  return `
+  <h2>&#9888;&#65039; Dados suspeitos — possível evento corporativo</h2>
+  <p class="note">Tickers com ↑ Mín52s &gt; 200%: preço atual muito acima da mínima de 52 semanas. Pode indicar grupamento ou desdobramento não ajustado no COTAHIST. <strong>Excluídos do ranking.</strong></p>
+  <table>
+    <thead><tr><th>Ticker</th><th>Setor</th><th>↑ Mín52s</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -147,7 +237,7 @@ export function gravarScanHtml(result: ScanResult, outPath: string): void {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scan pós circuit-breaker — quant-b3</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 1250px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    body { font-family: system-ui, sans-serif; max-width: 1300px; margin: 2rem auto; padding: 0 1rem; color: #222; }
     h1 { padding-bottom: .5rem; margin-bottom: 0; }
     h2 { margin-top: 2.5rem; color: #444; }
     ${NAV_CSS}
@@ -160,9 +250,11 @@ export function gravarScanHtml(result: ScanResult, outPath: string): void {
     a { color: #0066cc; }
     footer { margin-top: 3rem; font-size: .8rem; color: #888; }
     .note { background: #fff8e1; border-left: 4px solid #fbc02d; padding: .75rem 1rem; margin: 1rem 0; font-size: .875rem; }
+    .sector-summary { font-size: .85rem; color: #555; margin: .5rem 0 1rem; }
     .badge { display: inline-block; font-size: .7rem; font-weight: bold; padding: .1rem .35rem; border-radius: 3px; margin-left: .3rem; vertical-align: middle; }
     .badge-red    { background: #fde8e8; color: #c00; border: 1px solid #f5c6c6; }
     .badge-orange { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+    .badge-green  { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
     .badge-gray   { background: #f5f5f5; color: #666; border: 1px solid #ddd; }
   </style>
 </head>
@@ -176,13 +268,17 @@ export function gravarScanHtml(result: ScanResult, outPath: string): void {
   </p>
   <div class="note">
     <strong>Metodologia:</strong> score = rank(queda relativa ↑) + rank(EV/EBIT ↑).
-    Filtragem: liquidez ≥ R$1M · EV/EBIT > 0 · P/L > 0 · financeiras excluídas (usar ranking separado).
-    Queda relativa = retorno da ação − retorno do BOVA11 no período.
-    <strong>↑ Mín52s</strong>: percentual acima da mínima de 52 semanas (<span class="badge badge-red">Mín52s</span> ≤ 5%, <span class="badge badge-orange">~Mín52s</span> ≤ 15%).
-    <strong>Janelas</strong>: em quantas das 3 janelas o ticker aparece (<span class="badge badge-red">3/3</span> = sinal mais persistente).
+    Filtragem: liquidez ≥ R$1M · EV/EBIT > 0 · P/L > 0 · financeiras excluídas · 1 ticker por empresa (mais líquido) · ↑ Mín52s &gt; 200% excluídos como evento corporativo.<br>
+    <strong>Queda relativa</strong> = retorno da ação − retorno BOVA11.
+    <strong>↑ Mín52s</strong>: % acima da mínima de 52 semanas (<span class="badge badge-red">Mín52s</span> ≤ 5%, <span class="badge badge-orange">~Mín52s</span> ≤ 15%).
+    <strong>Janelas</strong>: em quantas das 3 janelas aparece (<span class="badge badge-red">3/3</span> = mais persistente).
+    <strong>Risco</strong> = knife score 0–4 (<span class="badge badge-green">&#128994;</span> baixo · <span class="badge badge-orange">&#128993;</span> médio · <span class="badge badge-red">&#128308;</span> alto).
+    <strong>juros↑</strong> = P/L ÷ EV/EBIT &gt; 2,5 (dívida consome o lucro).
+    Consenso limitado a 2 tickers por setor.
   </div>
 
   ${consensoHtml(result)}
+  ${corporateEventsHtml(result.corporateEvents)}
   ${tableHtml(result.top30d, "30 dias", result.date30d)}
   ${tableHtml(result.top60d, "60 dias", result.date60d)}
   ${tableHtml(result.top90d, "90 dias", result.date90d)}
